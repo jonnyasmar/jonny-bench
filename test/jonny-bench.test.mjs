@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -13,34 +13,64 @@ const runner = path.join(repoRoot, 'bin', 'jonny-bench.mjs');
 const validator = path.join(repoRoot, 'scripts', 'validate-manifest.mjs');
 const fakeCli = path.join(repoRoot, 'test', 'fixtures', 'fake-cli.mjs');
 
-async function makeRepo({ mode = 'normal', capMinutes = 1, modelSlug = 'fake-model' } = {}) {
+async function makeRepo({
+  mode = 'normal',
+  capMinutes = 1,
+  modelSlug = 'fake-model',
+  includeAuth = false,
+  authWriteTo = '$RUN_HOME/auth/auth.json',
+  seedTo = '$RUN_HOME/auth/seed.json',
+  invalidSeedJson = false
+} = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
   const home = path.join(root, 'real-home');
   await mkdir(path.join(home, '.fake'), { recursive: true });
   await writeFile(path.join(home, '.fake', 'cred.json'), '{"token":"secret"}\n', { mode: 0o600 });
+  if (includeAuth) {
+    await writeFile(path.join(home, 'source.json'), invalidSeedJson
+      ? '{"oauthAccount":'
+      : JSON.stringify({
+          oauthAccount: { accountUuid: 'acct-123' },
+          ignored: 'drop me'
+        }, null, 2));
+  }
   await mkdir(path.join(root, 'goals', 'tiny'), { recursive: true });
   await writeFile(path.join(root, 'package.json'), '{"type":"module","private":true}\n');
   await writeFile(path.join(root, 'models.json'), JSON.stringify({
     [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: 'fake', modelArg: 'fake-model-arg' },
     'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg' }
   }, null, 2));
-  await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({
-    fake: {
-      bin: process.execPath,
-      versionArgv: ['--version'],
-      credsFiles: ['.fake/cred.json'],
-      env: {
-        HOME: '$RUN_HOME',
-        FAKE_RECORD: '$RUN_DIR/fake-record.json',
-        FAKE_MODE: mode,
-        CUSTOM_ENV: 'model=$MODEL_ARG session=$SESSION_ID',
-        PROMPT_COPY: '$PROMPT'
-      },
-      argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '$PROMPT'],
-      transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
-      preCreateDirs: ['$RUN_HOME/.fake']
-    }
-  }, null, 2));
+  const fakeEnv = {
+    HOME: '$RUN_HOME',
+    FAKE_RECORD: '$RUN_DIR/fake-record.json',
+    FAKE_MODE: mode,
+    CUSTOM_ENV: 'model=$MODEL_ARG session=$SESSION_ID',
+    PROMPT_COPY: '$PROMPT'
+  };
+  const fakeRecipe = {
+    bin: process.execPath,
+    versionArgv: ['--version'],
+    credsFiles: ['.fake/cred.json'],
+    env: fakeEnv,
+    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '$PROMPT'],
+    transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
+    preCreateDirs: ['$RUN_HOME/.fake']
+  };
+  if (includeAuth) {
+    fakeEnv.AUTH_FILE = '$RUN_HOME/auth/auth.json';
+    fakeEnv.SEED_FILE = '$RUN_HOME/auth/seed.json';
+    fakeRecipe.authExec = {
+      argv: [process.execPath, '-e', 'console.log(JSON.stringify({fake:true}))'],
+      writeTo: authWriteTo
+    };
+    fakeRecipe.seedFiles = [{
+      from: '$HOME/source.json',
+      pickKeys: ['oauthAccount'],
+      extra: { hasCompletedOnboarding: true },
+      to: seedTo
+    }];
+  }
+  await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ fake: fakeRecipe }, null, 2));
   await writeFile(path.join(root, 'goals', 'tiny', 'goal.md'), `---
 slug: tiny
 title: Tiny App
@@ -64,6 +94,7 @@ Keep this prompt as one argv element.
     LANG: 'C.UTF-8',
     LC_ALL: 'C',
     HOME: home,
+    USER: 'bench-user',
     SECRET_LEAK: 'do-not-leak',
     ATRIUM_TOKEN: 'do-not-leak'
   };
@@ -171,6 +202,49 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(manifest.goals[0].runs[0].vendor, 'Test');
 });
 
+test('authExec writes stdout 0600 and seedFiles pick and merge JSON into RUN_HOME', async () => {
+  const { root, env } = await makeRepo({ includeAuth: true });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+
+  const runDir = await findRunDir(root);
+  const record = JSON.parse(await readFile(path.join(runDir, 'fake-record.json'), 'utf8'));
+  assert.equal(record.auth.mode, 0o600);
+  assert.equal(record.auth.text, '{"fake":true}\n');
+  assert.equal(record.seed.mode, 0o600);
+  assert.deepEqual(JSON.parse(record.seed.text), {
+    oauthAccount: { accountUuid: 'acct-123' },
+    hasCompletedOnboarding: true
+  });
+  assert.ok(record.auth.path.startsWith(record.env.HOME));
+  assert.ok(record.seed.path.startsWith(record.env.HOME));
+  assert.equal(existsSync(record.env.HOME), false, 'RUN_HOME should be removed after the run');
+});
+
+test('authExec and seedFiles destination paths must stay inside RUN_HOME before run allocation', async () => {
+  const authCase = await makeRepo({ includeAuth: true, authWriteTo: '$HOME/outside-auth.json' });
+  const authResult = runBench(authCase.root, authCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.notEqual(authResult.status, 0);
+  assert.match(authResult.stderr, /authExec\.writeTo must resolve inside RUN_HOME/);
+  assert.equal(existsSync(path.join(authCase.root, 'goals', 'tiny', 'runs')), false);
+
+  const seedCase = await makeRepo({ includeAuth: true, seedTo: '$HOME/outside-seed.json' });
+  const seedResult = runBench(seedCase.root, seedCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.notEqual(seedResult.status, 0);
+  assert.match(seedResult.stderr, /seedFiles\.to must resolve inside RUN_HOME/);
+  assert.equal(existsSync(path.join(seedCase.root, 'goals', 'tiny', 'runs')), false);
+});
+
+test('seedFiles invalid JSON aborts with the source path only and no run dir', async () => {
+  const { root, env, home } = await makeRepo({ includeAuth: true, invalidSeedJson: true });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.notEqual(result.status, 0);
+  const source = path.join(home, 'source.json');
+  assert.match(result.stderr, new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(result.stderr, /oauthAccount/);
+  assert.equal(existsSync(path.join(root, 'goals', 'tiny', 'runs')), false);
+});
+
 test('wall-clock cap kills the child and still publishes a failed run', async () => {
   const { root, env } = await makeRepo({ mode: 'sleep', capMinutes: 0.01 });
   const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
@@ -219,9 +293,27 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
   assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 18, totalCostUsd: 1.23 });
 
   const codex = [
-    JSON.stringify({ type: 'turn', tokenUsage: { inputTokens: 7, outputTokens: 8 } }),
-    JSON.stringify({ type: 'turn', tokenUsage: { inputTokens: 10, outputTokens: 20 } })
+    JSON.stringify({
+      ts: '2026-07-09T18:35:00.000Z',
+      stream: 'stdout',
+      text: `${JSON.stringify({ type: 'turn.completed', usage: { input_tokens: 7, cached_input_tokens: 2, output_tokens: 8, reasoning_output_tokens: 3 } })}\n{"type":"turn.`
+    }),
+    JSON.stringify({
+      ts: '2026-07-09T18:35:02.000Z',
+      stream: 'stdout',
+      text: `completed","usage":{"input_tokens":10,"cached_input_tokens":9,"output_tokens":20,"reasoning_output_tokens":11}}\n`
+    }),
+    JSON.stringify({ ts: '2026-07-09T18:35:03.000Z', stream: 'stderr', text: 'ignored\n' })
   ].join('\n');
   assert.deepEqual(extractUsage('codex', codex), { totalTokens: 30, totalCostUsd: null });
+
+  const rollout = [
+    JSON.stringify({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 } } } }),
+    JSON.stringify({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 20, output_tokens: 6, total_tokens: 26 } } } })
+  ].join('\n');
+  assert.deepEqual(extractUsage('codex', rollout), { totalTokens: 26, totalCostUsd: null });
+
+  const realCodexTranscript = path.join(repoRoot, 'goals', 'flappy', 'runs', 'gpt-5.5--20260709-1835', 'transcript.jsonl');
+  assert.equal(extractUsage('codex', readFileSync(realCodexTranscript, 'utf8')).totalTokens, 433360);
   assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null });
 });

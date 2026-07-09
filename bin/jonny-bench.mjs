@@ -97,13 +97,17 @@ async function allocateRun(goalSlug, modelSlug) {
 }
 
 function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId }) {
+  const home = process.env.HOME || os.homedir();
+  const user = process.env.USER || os.userInfo().username;
   return {
     RUN_HOME: runHome,
     WORKDIR: workdir,
     RUN_DIR: runDir,
     MODEL_ARG: modelArg,
     PROMPT: prompt,
-    SESSION_ID: sessionId
+    SESSION_ID: sessionId,
+    HOME: home,
+    USER: user
   };
 }
 
@@ -403,8 +407,34 @@ function sumUsageObject(usage) {
   return total;
 }
 
+function codexUsageTotal(usage) {
+  if (!usage || typeof usage !== 'object') return 0;
+  return (Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0)
+    + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0);
+}
+
+function unwrapStreamEvents(events) {
+  const unwrapped = [];
+  let stdoutText = '';
+  const flushStdout = () => {
+    if (!stdoutText) return;
+    unwrapped.push(...parseJsonLines(stdoutText));
+    stdoutText = '';
+  };
+  for (const event of events) {
+    if (event?.stream === 'stdout' && typeof event.text === 'string') {
+      stdoutText += event.text;
+    } else {
+      flushStdout();
+      unwrapped.push(event);
+    }
+  }
+  flushStdout();
+  return unwrapped;
+}
+
 export function extractUsage(cli, text) {
-  const events = parseJsonLines(text);
+  const events = unwrapStreamEvents(parseJsonLines(text));
   if (!events.length) return { totalTokens: null, totalCostUsd: null };
 
   if (cli === 'claude-code') {
@@ -418,8 +448,13 @@ export function extractUsage(cli, text) {
   }
 
   if (cli === 'codex') {
-    const final = events.findLast((event) => event.tokenUsage || event.ThreadTokenUsage || event.threadTokenUsage);
-    const usageTotal = sumUsageObject(final?.tokenUsage || final?.ThreadTokenUsage || final?.threadTokenUsage);
+    const final = events.findLast((event) => {
+      return (event.type === 'turn.completed' && event.usage)
+        || (event.payload?.type === 'token_count' && event.payload?.info?.total_token_usage);
+    });
+    const usageTotal = final?.payload?.type === 'token_count'
+      ? final.payload.info.total_token_usage.total_tokens
+      : codexUsageTotal(final?.usage);
     return { totalTokens: usageTotal > 0 ? usageTotal : null, totalCostUsd: null };
   }
 
@@ -437,17 +472,74 @@ async function copyTranscript(recipe, vars, runDir) {
 
 async function readUsageSource(transcriptPath, outputFile) {
   if (transcriptPath) return readFile(transcriptPath, 'utf8');
-  const chunks = [];
-  for (const line of (await readFile(outputFile, 'utf8')).split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    try {
-      const event = JSON.parse(line);
-      if (event.stream === 'stdout' && typeof event.text === 'string') chunks.push(event.text);
-    } catch {
-      // Ignore corrupt partial lines; cli-output remains the source of truth.
-    }
+  return readFile(outputFile, 'utf8');
+}
+
+function assertRunHomeTarget(file, runHome, label) {
+  const resolved = path.resolve(file);
+  const root = path.resolve(runHome);
+  if (!resolved.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`${label} must resolve inside RUN_HOME: ${file}`);
   }
-  return chunks.join('');
+}
+
+async function runAuthExec(authExec, vars) {
+  if (!authExec) return;
+  if (!Array.isArray(authExec.argv) || authExec.argv.length === 0) {
+    throw new Error('authExec.argv must be a non-empty argv array');
+  }
+  if (!authExec.writeTo) throw new Error('authExec.writeTo is required');
+  const dest = substitute(authExec.writeTo, vars);
+  assertRunHomeTarget(dest, vars.RUN_HOME, 'authExec.writeTo');
+  const argv = authExec.argv.map((arg) => substitute(arg, vars));
+  const result = await runCapture(argv[0], argv.slice(1), {
+    cwd: process.cwd(),
+    env: process.env,
+    timeoutMs: 30_000
+  });
+  if (result.code !== 0) {
+    throw new Error(`authExec failed for ${dest}: ${result.stderr.trim() || `exit ${result.code}`}`);
+  }
+  await mkdir(path.dirname(dest), { recursive: true });
+  await writeFile(dest, result.stdout, { mode: 0o600 });
+  await chmod(dest, 0o600);
+}
+
+function substituteJson(value, vars) {
+  if (typeof value === 'string') return substitute(value, vars);
+  if (Array.isArray(value)) return value.map((item) => substituteJson(item, vars));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, substituteJson(item, vars)]));
+  }
+  return value;
+}
+
+async function seedRecipeFiles(seedFiles, vars) {
+  for (const spec of seedFiles || []) {
+    const from = substitute(spec.from, vars);
+    const to = substitute(spec.to, vars);
+    assertRunHomeTarget(to, vars.RUN_HOME, 'seedFiles.to');
+    let sourceText;
+    try {
+      sourceText = await readFile(from, 'utf8');
+    } catch {
+      throw new Error(`Unable to read seedFiles source: ${from}`);
+    }
+    let source;
+    try {
+      source = JSON.parse(sourceText);
+    } catch {
+      throw new Error(`seedFiles source is not valid JSON: ${from}`);
+    }
+    const picked = {};
+    for (const key of spec.pickKeys || []) {
+      if (Object.hasOwn(source, key)) picked[key] = source[key];
+    }
+    const merged = { ...picked, ...substituteJson(spec.extra || {}, vars) };
+    await mkdir(path.dirname(to), { recursive: true });
+    await writeFile(to, `${JSON.stringify(merged, null, 2)}\n`, { mode: 0o600 });
+    await chmod(to, 0o600);
+  }
 }
 
 async function runVersion(recipe, env, cwd) {
@@ -493,10 +585,31 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
-async function runReal(goal, modelSlug, model, recipe, runId, runDir, options) {
+async function prepareRunHome(goal, modelSlug, model, recipe) {
   const runHome = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-home-'));
-  const workdir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-work-'));
   const sessionId = randomUUID();
+  const vars = buildVars({
+    runHome,
+    workdir: '',
+    runDir: '',
+    modelArg: model.modelArg || modelSlug,
+    prompt: goal.prompt,
+    sessionId
+  });
+  try {
+    await copyCreds(runHome, recipe.credsFiles);
+    await runAuthExec(recipe.authExec, vars);
+    await seedRecipeFiles(recipe.seedFiles, vars);
+    return { runHome, sessionId };
+  } catch (error) {
+    await rm(runHome, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared) {
+  const { runHome, sessionId } = prepared;
+  const workdir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-work-'));
   const vars = buildVars({
     runHome,
     workdir,
@@ -507,7 +620,6 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options) {
   });
   let keepHomeNote = null;
   try {
-    await copyCreds(runHome, recipe.credsFiles);
     for (const dir of recipe.preCreateDirs || []) await mkdir(substitute(dir, vars), { recursive: true });
     await initWorkdir(workdir);
 
@@ -629,10 +741,19 @@ async function runOne(goalSlug, modelSlug, options) {
   const recipe = recipes[model.cli];
   if (!recipe) throw new Error(`Missing CLI recipe: ${model.cli}`);
   await preflight(recipe, options);
-  const { runId, runDir } = await allocateRun(goal.slug, modelSlug);
+  let prepared = null;
+  let runId;
+  let runDir;
+  try {
+    if (!options.dryRun) prepared = await prepareRunHome(goal, modelSlug, model, recipe);
+    ({ runId, runDir } = await allocateRun(goal.slug, modelSlug));
+  } catch (error) {
+    if (prepared) await rm(prepared.runHome, { recursive: true, force: true });
+    throw error;
+  }
 
   if (options.dryRun) await writeDryRun(goal, modelSlug, model, runId, runDir);
-  else await runReal(goal, modelSlug, model, recipe, runId, runDir, options);
+  else await runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared);
 
   const manifest = await regenerateManifest();
   await validateManifest(manifest);

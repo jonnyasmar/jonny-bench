@@ -1,9 +1,21 @@
 {
-  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=goal body, $SESSION_ID=uuid. credsFiles are copied from the real ~ into $RUN_HOME (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=goal body, $SESSION_ID=uuid, $USER=real user. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
   "claude-code": {
     "bin": "claude",
     "versionArgv": ["--version"],
-    "credsFiles": [".claude/.credentials.json"],
+    "credsFiles": [],
+    "authExec": {
+      "argv": ["security", "find-generic-password", "-s", "Claude Code-credentials", "-a", "$USER", "-w"],
+      "writeTo": "$RUN_HOME/.claude/.credentials.json"
+    },
+    "seedFiles": [
+      {
+        "from": "$HOME/.claude.json",
+        "pickKeys": ["oauthAccount"],
+        "extra": { "hasCompletedOnboarding": true },
+        "to": "$RUN_HOME/.claude/.claude.json"
+      }
+    ],
     "env": { "HOME": "$RUN_HOME", "CLAUDE_CONFIG_DIR": "$RUN_HOME/.claude" },
     "argv": ["-p", "--model", "$MODEL_ARG", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions", "--session-id", "$SESSION_ID", "$PROMPT"],
     "transcriptGlob": "$RUN_HOME/.claude/projects/*/$SESSION_ID.jsonl",
@@ -18,6 +30,6 @@
     "argv": ["exec", "-C", "$WORKDIR", "-m", "$MODEL_ARG", "--json", "--output-last-message", "$RUN_DIR/last-message.txt", "--sandbox", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "--ignore-user-config", "$PROMPT"],
     "transcriptGlob": "$RUN_HOME/.codex/sessions/**/rollout-*.jsonl",
     "preCreateDirs": ["$RUN_HOME/.codex"],
-    "usage": "JSONL events: tokenUsage/ThreadTokenUsage totals; no USD field"
+    "usage": "cli-output.jsonl wrappers: stdout text contains JSONL; last type=turn.completed usage.{input_tokens,output_tokens}; no USD field"
   }
 }

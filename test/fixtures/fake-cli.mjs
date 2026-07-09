@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 
@@ -16,13 +16,17 @@ async function main() {
   } catch {
     cred = null;
   }
+  const auth = await readObservedFile(process.env.AUTH_FILE);
+  const seed = await readObservedFile(process.env.SEED_FILE);
 
   await mkdir(path.dirname(recordPath), { recursive: true });
   await writeFile(recordPath, JSON.stringify({
     argv,
     cwd: process.cwd(),
     env: process.env,
-    cred
+    cred,
+    auth,
+    seed
   }, null, 2));
 
   process.stdout.write(`${JSON.stringify({ type: 'assistant', usage: { input_tokens: 2, output_tokens: 3 } })}\n`);
@@ -43,6 +47,20 @@ async function main() {
     JSON.stringify({ type: 'assistant', usage: { input_tokens: 11, output_tokens: 13 } }),
     JSON.stringify({ type: 'result', total_cost_usd: 0.34, usage: { input_tokens: 17, output_tokens: 19 } })
   ].join('\n') + '\n');
+}
+
+async function readObservedFile(file) {
+  if (!file) return null;
+  try {
+    const info = await stat(file);
+    return {
+      path: file,
+      mode: info.mode & 0o777,
+      text: await readFile(file, 'utf8')
+    };
+  } catch {
+    return null;
+  }
 }
 
 main().catch((error) => {
