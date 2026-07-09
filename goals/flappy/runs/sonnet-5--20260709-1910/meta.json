@@ -9,5 +9,6 @@
   "totalTokens": 2399370,
   "totalCostUsd": 1.4622195,
   "status": "ok",
-  "exitReason": "completed"
+  "exitReason": "completed",
+  "redactions": 110
 }

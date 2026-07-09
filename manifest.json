@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T23:24:54.250Z",
+  "generatedAt": "2026-07-09T23:50:45.914Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "goals": [
     {
@@ -21,6 +21,7 @@
           "totalCostUsd": 1.4622195,
           "status": "ok",
           "exitReason": "completed",
+          "redactions": 110,
           "displayName": "Sonnet 5",
           "vendor": "Anthropic",
           "appPath": "goals/flappy/runs/sonnet-5--20260709-1910/app/index.html",
