@@ -15,7 +15,7 @@
     "versionArgv": ["--version"],
     "credsFiles": [".codex/auth.json"],
     "env": { "HOME": "$RUN_HOME", "CODEX_HOME": "$RUN_HOME/.codex" },
-    "argv": ["exec", "-C", "$WORKDIR", "-m", "$MODEL_ARG", "--json", "--output-last-message", "$RUN_DIR/last-message.txt", "--sandbox", "workspace-write", "-a", "never", "-c", "sandbox_workspace_write.network_access=true", "--ignore-user-config", "$PROMPT"],
+    "argv": ["exec", "-C", "$WORKDIR", "-m", "$MODEL_ARG", "--json", "--output-last-message", "$RUN_DIR/last-message.txt", "--sandbox", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "--ignore-user-config", "$PROMPT"],
     "transcriptGlob": "$RUN_HOME/.codex/sessions/**/rollout-*.jsonl",
     "preCreateDirs": ["$RUN_HOME/.codex"],
     "usage": "JSONL events: tokenUsage/ThreadTokenUsage totals; no USD field"
