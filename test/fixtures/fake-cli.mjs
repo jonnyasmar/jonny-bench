@@ -31,6 +31,7 @@ async function main() {
 
   process.stdout.write(`${JSON.stringify({ type: 'assistant', usage: { input_tokens: 2, output_tokens: 3 } })}\n`);
   process.stdout.write(`${JSON.stringify({ type: 'result', total_cost_usd: 0.12, usage: { input_tokens: 5, output_tokens: 7 } })}\n`);
+  if (process.env.FAKE_STREAM_LEAK) process.stdout.write(`${process.env.FAKE_STREAM_LEAK}\n`);
 
   if (mode === 'sleep') {
     await sleep(60_000);
@@ -38,7 +39,10 @@ async function main() {
   }
 
   await mkdir(path.join(process.cwd(), 'dist'), { recursive: true });
-  await writeFile(path.join(process.cwd(), 'dist', 'index.html'), '<!doctype html><title>fake bench app</title><h1>fake</h1>');
+  await writeFile(
+    path.join(process.cwd(), 'dist', 'index.html'),
+    `<!doctype html><title>fake bench app</title><h1>fake</h1>${process.env.FAKE_APP_PATH || ''}`
+  );
 
   const sessionArg = argv[argv.indexOf('--session') + 1] || 'missing-session';
   const transcriptDir = path.join(home, 'transcripts');

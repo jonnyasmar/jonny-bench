@@ -15,6 +15,14 @@ Results viewer: https://getatrium.dev/bench
 - Network is on.
 - Each run has a wall-clock cap from the goal spec.
 
+## Trust model & leak gate
+
+Bench runs execute as your normal OS user. The runner strips agent env/config and uses a temp home, but it is not an OS sandbox: files readable by your user may still be readable to a prompted CLI.
+
+Before publishing, jonny-bench mechanically redacts real home paths in text artifacts to `/Users/redacted`, then scans the run output for common secrets, private keys, JWTs, non-allowlisted emails, and remaining real-home paths. A finding blocks publish before `git add`; `--allow-leaks` exists for intentional overrides and prints a warning.
+
+The roadmap answer for stronger isolation is a separate OS user or container. The current leak gate is a pre-publish safety net, not a filesystem security boundary.
+
 ## Results
 
 Runs are append-only. A run is never deleted or overwritten by the runner; re-runs create a new `runId`.

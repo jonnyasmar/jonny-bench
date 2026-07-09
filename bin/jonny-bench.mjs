@@ -1,22 +1,24 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
-import { access, chmod, copyFile, cp, mkdir, mkdtemp, open, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { access, chmod, copyFile, cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { constants as fsConstants, createWriteStream, existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isTextFile, redactFile, scanPaths } from './leak-scan.mjs';
 
 const BASE_URL = 'https://jonnyasmar.github.io/jonny-bench';
 const PAYLOAD_LIMIT_BYTES = 25 * 1024 * 1024;
 const ALLOWLIST_ENV = ['PATH', 'TERM', 'LANG', 'LC_ALL'];
 const APP_DIR_CANDIDATES = ['dist', 'build', 'out', '.'];
+const BASE_CHILD_PATH = ['/usr/bin', '/bin', '/usr/sbin', '/sbin', '/usr/local/bin', '/opt/homebrew/bin'];
 
 function usage(exitCode = 1) {
   const text = `Usage:
-  jonny-bench run <goal> --model <slug> [--dry-run] [--no-push] [--keep-home] [--no-screenshot]
+  jonny-bench run <goal> --model <slug> [--dry-run] [--no-push] [--keep-home] [--no-screenshot] [--allow-leaks]
   jonny-bench run --all --model <slug> [...]
   jonny-bench list
   jonny-bench regen [--no-push]`;
@@ -118,14 +120,20 @@ function substitute(value, vars) {
   });
 }
 
-function buildChildEnv(recipeEnv, vars) {
+function minimalChildPath(resolvedBin) {
+  const parts = [...BASE_CHILD_PATH, path.dirname(resolvedBin), path.dirname(process.execPath)];
+  return [...new Set(parts.filter(Boolean))].join(path.delimiter);
+}
+
+function buildChildEnv(recipeEnv, vars, childPath) {
   const env = {};
   for (const key of ALLOWLIST_ENV) {
-    if (process.env[key] !== undefined) env[key] = process.env[key];
+    if (key !== 'PATH' && process.env[key] !== undefined) env[key] = process.env[key];
   }
   for (const [key, value] of Object.entries(recipeEnv || {})) {
     env[key] = substitute(value, vars);
   }
+  env.PATH = childPath;
   return env;
 }
 
@@ -161,6 +169,7 @@ async function preflight(recipe, { dryRun }) {
     if (!(await pathExists(from))) throw new Error(`Missing credsFile in HOME: ${rel}`);
   }
   await assertCleanForPublish();
+  return { binPath: resolved, childPath: minimalChildPath(resolved) };
 }
 
 function porcelainPath(line) {
@@ -539,15 +548,15 @@ async function seedRecipeFiles(seedFiles, vars) {
   }
 }
 
-async function runVersion(recipe, env, cwd) {
+async function runVersion(recipe, binPath, env, cwd) {
   if (!Array.isArray(recipe.versionArgv)) return null;
-  const result = await runCapture(recipe.bin, recipe.versionArgv, { cwd, env, timeoutMs: 15_000 });
+  const result = await runCapture(binPath, recipe.versionArgv, { cwd, env, timeoutMs: 15_000 });
   if (result.code !== 0) return null;
   const line = `${result.stdout}${result.stderr}`.trim().split(/\r?\n/)[0]?.trim();
   return line || null;
 }
 
-async function writeDryRun(goal, modelSlug, model, runId, runDir) {
+async function writeDryRun(goal, modelSlug, model, runId, runDir, options) {
   await mkdir(path.join(runDir, 'app'), { recursive: true });
   await writeFile(path.join(runDir, 'app', 'index.html'), `<!doctype html>
 <meta charset="utf-8">
@@ -570,7 +579,7 @@ async function writeDryRun(goal, modelSlug, model, runId, runDir) {
     exitReason: 'completed',
     dryRun: true
   };
-  await writeJson(path.join(runDir, 'meta.json'), meta);
+  await writeMetaAfterLeakGate(runDir, meta, options);
   return meta;
 }
 
@@ -604,7 +613,7 @@ async function prepareRunHome(goal, modelSlug, model, recipe) {
   }
 }
 
-async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared) {
+async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo) {
   const { runHome, sessionId } = prepared;
   const workdir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-work-'));
   const vars = buildVars({
@@ -620,11 +629,11 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
     for (const dir of recipe.preCreateDirs || []) await mkdir(substitute(dir, vars), { recursive: true });
     await initWorkdir(workdir);
 
-    const env = buildChildEnv(recipe.env, vars);
-    const cliVersion = await runVersion(recipe, env, workdir);
+    const env = buildChildEnv(recipe.env, vars, preflightInfo.childPath);
+    const cliVersion = await runVersion(recipe, preflightInfo.binPath, env, workdir);
     const argv = (recipe.argv || []).map((arg) => substitute(arg, vars));
     const startedAt = new Date().toISOString();
-    const result = await runStreaming(recipe.bin, argv, {
+    const result = await runStreaming(preflightInfo.binPath, argv, {
       cwd: workdir,
       env,
       runDir,
@@ -668,11 +677,10 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
       status,
       exitReason
     };
-    await writeJson(path.join(runDir, 'meta.json'), meta);
-
     if (!options.noScreenshot && status === 'ok') {
       await tryScreenshot(path.join(runDir, 'app'), path.join(runDir, 'screenshot.png'));
     }
+    await writeMetaAfterLeakGate(runDir, meta, options);
     return meta;
   } finally {
     await rm(workdir, { recursive: true, force: true });
@@ -713,6 +721,54 @@ async function tryScreenshot(appDir, screenshotPath) {
   }
 }
 
+class LeakGateError extends Error {
+  constructor(message) {
+    super(message);
+    this.exitCode = 2;
+  }
+}
+
+async function collectRunTextArtifacts(runDir) {
+  const files = [];
+  for (const name of ['transcript.jsonl', 'transcript.txt', 'cli-output.jsonl', 'last-message.txt']) {
+    const file = path.join(runDir, name);
+    if (await pathExists(file)) files.push(file);
+  }
+  const appDir = path.join(runDir, 'app');
+  if (await pathExists(appDir)) {
+    await walk(appDir, async (file, dirent) => {
+      if (dirent.isFile() && await isTextFile(file)) files.push(file);
+    });
+  }
+  return files;
+}
+
+async function runLeakGate(runDir, options) {
+  const files = await collectRunTextArtifacts(runDir);
+  let redactions = 0;
+  for (const file of files) redactions += await redactFile(file);
+  const findings = await scanPaths(files);
+  if (findings.length) {
+    const lines = findings.map((finding) => {
+      const rel = path.relative(process.cwd(), finding.file).replaceAll(path.sep, '/');
+      return `${rel}:${finding.line} ${finding.rule} ${finding.match}`;
+    });
+    if (options.allowLeaks) {
+      console.error(`WARNING: publishing with leak findings due to --allow-leaks\n${lines.join('\n')}`);
+    } else {
+      console.error(lines.join('\n'));
+      throw new LeakGateError('Leak gate blocked publish; rerun with --allow-leaks to override.');
+    }
+  }
+  return redactions;
+}
+
+async function writeMetaAfterLeakGate(runDir, meta, options) {
+  const redactions = await runLeakGate(runDir, options);
+  await writeJson(path.join(runDir, 'meta.json'), { ...meta, redactions });
+  return redactions;
+}
+
 async function gitAddCommitPush(goalSlug, modelSlug, runId, runDir, noPush) {
   const relRunDir = path.relative(process.cwd(), runDir);
   let result = await runCapture('git', ['add', relRunDir, 'manifest.json'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
@@ -737,7 +793,7 @@ async function runOne(goalSlug, modelSlug, options) {
   if (!model) throw new Error(`Unknown model: ${modelSlug}`);
   const recipe = recipes[model.cli];
   if (!recipe) throw new Error(`Missing CLI recipe: ${model.cli}`);
-  await preflight(recipe, options);
+  const preflightInfo = await preflight(recipe, options);
   let prepared = null;
   let runId;
   let runDir;
@@ -749,8 +805,8 @@ async function runOne(goalSlug, modelSlug, options) {
     throw error;
   }
 
-  if (options.dryRun) await writeDryRun(goal, modelSlug, model, runId, runDir);
-  else await runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared);
+  if (options.dryRun) await writeDryRun(goal, modelSlug, model, runId, runDir, options);
+  else await runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo);
 
   const manifest = await regenerateManifest();
   await validateManifest(manifest);
@@ -790,7 +846,8 @@ async function commandRun(args) {
     dryRun: args.includes('--dry-run'),
     noPush: args.includes('--no-push') || args.includes('--dry-run'),
     keepHome: args.includes('--keep-home'),
-    noScreenshot: args.includes('--no-screenshot') || args.includes('--dry-run')
+    noScreenshot: args.includes('--no-screenshot') || args.includes('--dry-run'),
+    allowLeaks: args.includes('--allow-leaks')
   };
   const modelIdx = args.indexOf('--model');
   if (modelIdx === -1 || !args[modelIdx + 1]) usage();
@@ -809,6 +866,7 @@ async function commandRegen(args) {
   await assertCleanForPublish();
   const manifest = await regenerateManifest();
   await validateManifest(manifest);
+  if (noPush) return;
   let result = await runCapture('git', ['add', 'manifest.json'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
   if (result.code !== 0) throw new Error(`git add failed: ${result.stderr.trim()}`);
   result = await runCapture('git', ['commit', '-m', 'bench: regenerate manifest'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
@@ -934,6 +992,6 @@ const thisFile = fileURLToPath(import.meta.url);
 if (process.argv[1] && path.resolve(process.argv[1]) === thisFile) {
   main(process.argv.slice(2)).catch((error) => {
     console.error(error.message);
-    process.exit(1);
+    process.exit(error.exitCode || 1);
   });
 }

@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtemp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { extractUsage } from '../bin/jonny-bench.mjs';
+import { scanText } from '../bin/leak-scan.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runner = path.join(repoRoot, 'bin', 'jonny-bench.mjs');
 const validator = path.join(repoRoot, 'scripts', 'validate-manifest.mjs');
 const fakeCli = path.join(repoRoot, 'test', 'fixtures', 'fake-cli.mjs');
+const baseChildPath = ['/usr/bin', '/bin', '/usr/sbin', '/sbin', '/usr/local/bin', '/opt/homebrew/bin'];
 
 async function makeRepo({
   mode = 'normal',
@@ -21,7 +23,10 @@ async function makeRepo({
   includeAuth = false,
   authWriteTo = '$RUN_HOME/auth/auth.json',
   seedTo = '$RUN_HOME/auth/seed.json',
-  invalidSeedJson = false
+  invalidSeedJson = false,
+  streamLeak = null,
+  appPathLeak = false,
+  usePathResolvedBin = false
 } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
   const home = path.join(root, 'real-home');
@@ -41,6 +46,16 @@ async function makeRepo({
     [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' },
     'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg' }
   }, null, 2));
+  let recipeBin = process.execPath;
+  let customBin = null;
+  let parentPath = process.env.PATH || '';
+  if (usePathResolvedBin) {
+    customBin = path.join(root, 'custom-bin');
+    await mkdir(customBin, { recursive: true });
+    recipeBin = 'fake-node';
+    await symlink(process.execPath, path.join(customBin, recipeBin));
+    parentPath = `${customBin}${path.delimiter}${parentPath}`;
+  }
   const fakeEnv = {
     HOME: '$RUN_HOME',
     FAKE_RECORD: '$RUN_DIR/fake-record.json',
@@ -48,8 +63,10 @@ async function makeRepo({
     CUSTOM_ENV: 'model=$MODEL_ARG session=$SESSION_ID',
     PROMPT_COPY: '$PROMPT'
   };
+  if (streamLeak) fakeEnv.FAKE_STREAM_LEAK = streamLeak;
+  if (appPathLeak) fakeEnv.FAKE_APP_PATH = '$HOME/private-project';
   const fakeRecipe = {
-    bin: process.execPath,
+    bin: recipeBin,
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
@@ -90,7 +107,7 @@ Keep this prompt as one argv element.
   execFileSync('git', ['commit', '-m', 'initial'], { cwd: root });
 
   const env = {
-    PATH: process.env.PATH || '',
+    PATH: parentPath,
     TERM: 'xterm-256color',
     LANG: 'C.UTF-8',
     LC_ALL: 'C',
@@ -99,7 +116,11 @@ Keep this prompt as one argv element.
     SECRET_LEAK: 'do-not-leak',
     ATRIUM_TOKEN: 'do-not-leak'
   };
-  return { root, home, env };
+  return { root, home, env, customBin };
+}
+
+function expectedChildPath(...extraDirs) {
+  return [...new Set([...baseChildPath, ...extraDirs.filter(Boolean), path.dirname(process.execPath)])].join(path.delimiter);
 }
 
 function runBench(root, env, args) {
@@ -143,12 +164,38 @@ test('dry-run appends run ids and validates the manifest', async () => {
   assert.equal(runs.length, 2);
   assert.notEqual(runs[0], runs[1]);
   assert.ok(runs.every((run) => run.startsWith('fable-5--')));
+  for (const run of runs) {
+    const meta = JSON.parse(await readFile(path.join(root, 'goals', 'tiny', 'runs', run, 'meta.json'), 'utf8'));
+    assert.equal(meta.redactions, 0);
+  }
 
   const validate = spawnSync(process.execPath, [validator], { cwd: root, env, encoding: 'utf8' });
   assert.equal(validate.status, 0, validate.stderr);
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
   assert.equal(manifest.goals[0].runs.length, 0);
   assert.equal(manifest.goals[0].runs.some((run) => run.dryRun === true), false);
+});
+
+test('leak scanner covers secrets, emails, truncation, and home paths', () => {
+  const realHome = '/Users/alice';
+  const cases = [
+    ['anthropic-api-key', 'sk-ant-abcdefghijklmnopqrstuvwxyz'],
+    ['github-token', 'ghp_abcdefghijklmnopqrstuvwx'],
+    ['aws-access-key', 'AKIAABCDEFGHIJKLMNOP'],
+    ['slack-token', 'xoxb-abcdefghijklmnop'],
+    ['private-key', '-----BEGIN PRIVATE KEY-----'],
+    ['jwt', 'eyJabcdefghijkl.eyJmnopqrstuvwxyz'],
+    ['email', 'person@example.com'],
+    ['real-home-path', '/Users/alice/project']
+  ];
+  for (const [rule, value] of cases) {
+    assert.equal(scanText(value, { realHome, user: 'alice' }).some((finding) => finding.rule === rule), true, rule);
+  }
+  assert.equal(scanText('sk-ant-short ghp_short AKIA123 xoxb-short eyJshort.eyJshort', { realHome }).length, 0);
+  assert.equal(scanText('noreply@anthropic.com jonny@asmar.co', { realHome }).length, 0);
+  assert.equal(scanText('/var/folders/alice/tmp /tmp/jonny-bench-work', { realHome }).length, 0);
+  const truncated = scanText('sk-ant-abcdefghijklmnopqrstuvwxyz', { realHome })[0].match;
+  assert.equal(truncated, 'sk-ant-abcdefghijklmnopq…');
 });
 
 test('fake CLI receives exact env, substituted argv, copied creds, and publishes artifact metadata', async () => {
@@ -172,6 +219,7 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   ].sort());
   assert.equal(record.env.SECRET_LEAK, undefined);
   assert.equal(record.env.ATRIUM_TOKEN, undefined);
+  assert.equal(record.env.PATH, expectedChildPath(path.dirname(process.execPath)));
   assert.equal(record.argv[0], '--model');
   assert.equal(record.argv[1], 'fake-model-arg');
   assert.equal(record.argv[2], '--session');
@@ -201,6 +249,39 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(manifest.goals[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
   assert.equal(manifest.goals[0].runs[0].displayName, 'fake-model');
   assert.equal(manifest.goals[0].runs[0].vendor, 'Test');
+});
+
+test('child PATH is minimal and recipe bin is resolved before spawn', async () => {
+  const { root, env, customBin } = await makeRepo({ usePathResolvedBin: true });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+  const runDir = await findRunDir(root);
+  const record = JSON.parse(await readFile(path.join(runDir, 'fake-record.json'), 'utf8'));
+  assert.equal(record.env.PATH, expectedChildPath(customBin));
+  assert.equal(record.env.PATH.includes(env.PATH), false);
+});
+
+test('leak gate blocks secret streams without committing', async () => {
+  const secret = 'sk-ant-abcdefghijklmnopqrstuvwxyz';
+  const { root, env } = await makeRepo({ streamLeak: secret });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /anthropic-api-key/);
+  assert.doesNotMatch(result.stderr, new RegExp(secret));
+  const count = execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  assert.equal(count, '1');
+});
+
+test('leak gate redacts real-home paths and records redaction count', async () => {
+  const { root, env, home } = await makeRepo({ appPathLeak: true });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+  const runDir = await findRunDir(root);
+  const app = await readFile(path.join(runDir, 'app', 'index.html'), 'utf8');
+  assert.equal(app.includes(home), false);
+  assert.equal(app.includes('/Users/redacted'), true);
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.ok(meta.redactions >= 1);
 });
 
 test('authExec writes stdout 0600 and seedFiles pick and merge JSON into RUN_HOME', async () => {
