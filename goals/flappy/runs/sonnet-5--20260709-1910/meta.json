@@ -6,8 +6,8 @@
   "cliVersion": "2.1.205 (Claude Code)",
   "startedAt": "2026-07-09T23:10:43.856Z",
   "wallSeconds": 452,
-  "totalTokens": null,
-  "totalCostUsd": null,
+  "totalTokens": 2399370,
+  "totalCostUsd": 1.4622195,
   "status": "ok",
   "exitReason": "completed"
 }
