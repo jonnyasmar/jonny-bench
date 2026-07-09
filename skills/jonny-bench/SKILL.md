@@ -11,7 +11,7 @@ Runner:
 
 ```bash
 node bin/jonny-bench.mjs run <goal> --model <slug>
-node bin/jonny-bench.mjs run <goal> --all
+node bin/jonny-bench.mjs run --all --model <slug>
 node bin/jonny-bench.mjs run <goal> --model <slug> --dry-run
 node bin/jonny-bench.mjs run <goal> --model <slug> --no-push
 node bin/jonny-bench.mjs list
