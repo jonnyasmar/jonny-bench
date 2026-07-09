@@ -1,0 +1,23 @@
+{
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=goal body, $SESSION_ID=uuid. credsFiles are copied from the real ~ into $RUN_HOME (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "claude-code": {
+    "bin": "claude",
+    "versionArgv": ["--version"],
+    "credsFiles": [".claude/.credentials.json"],
+    "env": { "HOME": "$RUN_HOME", "CLAUDE_CONFIG_DIR": "$RUN_HOME/.claude" },
+    "argv": ["-p", "--model", "$MODEL_ARG", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions", "--session-id", "$SESSION_ID", "$PROMPT"],
+    "transcriptGlob": "$RUN_HOME/.claude/projects/*/$SESSION_ID.jsonl",
+    "preCreateDirs": [],
+    "usage": "final stream event: total_cost_usd + usage.{input_tokens,output_tokens,...}"
+  },
+  "codex": {
+    "bin": "codex",
+    "versionArgv": ["--version"],
+    "credsFiles": [".codex/auth.json"],
+    "env": { "HOME": "$RUN_HOME", "CODEX_HOME": "$RUN_HOME/.codex" },
+    "argv": ["exec", "-C", "$WORKDIR", "-m", "$MODEL_ARG", "--json", "--output-last-message", "$RUN_DIR/last-message.txt", "--sandbox", "workspace-write", "-a", "never", "-c", "sandbox_workspace_write.network_access=true", "--ignore-user-config", "$PROMPT"],
+    "transcriptGlob": "$RUN_HOME/.codex/sessions/**/rollout-*.jsonl",
+    "preCreateDirs": ["$RUN_HOME/.codex"],
+    "usage": "JSONL events: tokenUsage/ThreadTokenUsage totals; no USD field"
+  }
+}

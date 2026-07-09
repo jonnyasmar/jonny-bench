@@ -1,0 +1,42 @@
+# jonny-bench
+
+One prompt, every model, no steroids.
+
+jonny-bench is a founder-curated vibe bench for agent CLIs. Each goal prompt is run headless in a clean room, the resulting static app is published, and the transcript stays attached so you can judge the work instead of trusting a score.
+
+Results viewer: https://getatrium.dev/bench
+
+## Clean-room contract
+
+- No repo hooks, MCPs, `AGENTS.md`, or preloaded skills.
+- The CLI is run as shipped, through the recipe in `cli-recipes.json`.
+- One prompt, zero follow-ups.
+- Auto-approve is enabled where the CLI supports it.
+- Network is on.
+- Each run has a wall-clock cap from the goal spec.
+
+## Results
+
+Runs are append-only. A run is never deleted or overwritten by the runner; re-runs create a new `runId`.
+
+```text
+goals/<slug>/runs/<runId>/
+  app/
+  transcript.jsonl
+  meta.json
+  screenshot.png
+```
+
+`manifest.json` is regenerated from the tree so the viewer can pick up new runs without a www redeploy. GitHub Pages serves this repo, and `getatrium.dev/bench` reads the published manifest.
+
+## Models
+
+Contestants are models via CLI, not abstract model names. For example, `Opus 4.8 via Claude Code v2.1.205` is the contestant, because the CLI, flags, permissions, and transcript format are part of the run.
+
+Add models in `models.json`. CLI invocation details live in `cli-recipes.json`.
+
+## Goals
+
+Goals are curated prompts under `goals/<slug>/goal.md`. To suggest a new goal, ping X `@jonnyasmar`.
+
+This is a vibe bench, n=1 per run. Read the transcripts.

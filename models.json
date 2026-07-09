@@ -1,0 +1,6 @@
+{
+  "opus-4.8": { "displayName": "Opus 4.8", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-opus-4-8" },
+  "sonnet-5": { "displayName": "Sonnet 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-sonnet-5" },
+  "fable-5": { "displayName": "Fable 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-fable-5" },
+  "gpt-5.5": { "displayName": "GPT-5.5", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.5" }
+}
