@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T23:18:26.955Z",
+  "generatedAt": "2026-07-09T23:24:54.250Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "goals": [
     {
@@ -17,8 +17,8 @@
           "cliVersion": "2.1.205 (Claude Code)",
           "startedAt": "2026-07-09T23:10:43.856Z",
           "wallSeconds": 452,
-          "totalTokens": null,
-          "totalCostUsd": null,
+          "totalTokens": 2399370,
+          "totalCostUsd": 1.4622195,
           "status": "ok",
           "exitReason": "completed",
           "displayName": "Sonnet 5",
