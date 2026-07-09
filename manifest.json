@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T22:40:06.600Z",
+  "generatedAt": "2026-07-09T22:40:40.119Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "goals": [
     {
@@ -9,6 +9,24 @@
       "capMinutes": 30,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "sonnet-5--20260709-1840",
+          "goal": "flappy",
+          "model": "sonnet-5",
+          "cli": "claude-code",
+          "cliVersion": "2.1.205 (Claude Code)",
+          "startedAt": "2026-07-09T22:40:38.047Z",
+          "wallSeconds": 2,
+          "totalTokens": null,
+          "totalCostUsd": null,
+          "status": "failed",
+          "exitReason": "error",
+          "displayName": "Sonnet 5",
+          "vendor": "Anthropic",
+          "appPath": null,
+          "transcriptPath": "goals/flappy/runs/sonnet-5--20260709-1840/transcript.jsonl",
+          "screenshotPath": null
+        },
         {
           "runId": "gpt-5.5--20260709-1835",
           "goal": "flappy",

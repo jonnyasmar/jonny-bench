@@ -1,0 +1,13 @@
+{
+  "runId": "sonnet-5--20260709-1840",
+  "goal": "flappy",
+  "model": "sonnet-5",
+  "cli": "claude-code",
+  "cliVersion": "2.1.205 (Claude Code)",
+  "startedAt": "2026-07-09T22:40:38.047Z",
+  "wallSeconds": 2,
+  "totalTokens": null,
+  "totalCostUsd": null,
+  "status": "failed",
+  "exitReason": "error"
+}
