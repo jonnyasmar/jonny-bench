@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Skyline Skimmer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0d1321;
+      color: #f7fbff;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 12% 16%, rgba(255, 213, 105, 0.12), transparent 32%),
+        linear-gradient(180deg, #121b35 0%, #1b3151 48%, #232940 100%);
+    }
+
+    .shell {
+      position: relative;
+      width: min(100vw, 620px);
+      height: min(100vh, 920px);
+      overflow: hidden;
+      background: #111827;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand,
+    .scorebox,
+    .tip,
+    .panel {
+      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.38);
+    }
+
+    .brand {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      color: rgba(247, 251, 255, 0.66);
+      font-size: clamp(0.72rem, 2vw, 0.8rem);
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 2px 0 0;
+      font-size: clamp(1.2rem, 5vw, 1.75rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .scorebox {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(64px, auto));
+      gap: 8px;
+      text-align: right;
+      flex: 0 0 auto;
+    }
+
+    .metric {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(11, 17, 30, 0.45);
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-shadow: 0 12px 34px rgba(4, 8, 20, 0.25);
+      backdrop-filter: blur(14px);
+    }
+
+    .label {
+      color: rgba(247, 251, 255, 0.6);
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .value {
+      margin-top: 1px;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.2rem, 5vw, 1.75rem);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      pointer-events: none;
+    }
+
+    .panel {
+      width: min(430px, 92vw);
+      transform: translateY(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(14, 22, 38, 0.84), rgba(9, 14, 25, 0.74));
+      box-shadow: 0 24px 80px rgba(3, 7, 16, 0.46);
+      padding: clamp(18px, 5vw, 26px);
+      text-align: center;
+      backdrop-filter: blur(18px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .panel.hidden {
+      opacity: 0;
+      transform: translateY(24px) scale(0.98);
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: clamp(1.7rem, 8vw, 3rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .panel p {
+      margin: 12px auto 0;
+      max-width: 27rem;
+      color: rgba(247, 251, 255, 0.74);
+      font-size: clamp(0.92rem, 3vw, 1.05rem);
+      line-height: 1.45;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .stat {
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 12px 10px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 2rem;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tip {
+      align-self: center;
+      margin: 0 0 2px;
+      border-radius: 999px;
+      background: rgba(7, 12, 22, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: rgba(247, 251, 255, 0.74);
+      padding: 9px 13px;
+      font-size: clamp(0.76rem, 2.5vw, 0.9rem);
+      font-weight: 750;
+      box-shadow: 0 16px 42px rgba(4, 8, 18, 0.26);
+      backdrop-filter: blur(14px);
+      transition: opacity 160ms ease;
+    }
+
+    .playing .tip {
+      opacity: 0;
+    }
+
+    @media (min-width: 720px) and (min-height: 720px) {
+      .shell {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" id="shell" aria-label="Skyline Skimmer game">
+    <canvas id="game" width="620" height="920"></canvas>
+    <div class="hud" aria-hidden="true">
+      <div class="topbar">
+        <div class="brand">
+          <div class="eyebrow">Arcade</div>
+          <h1>Skyline Skimmer</h1>
+        </div>
+        <div class="scorebox">
+          <div class="metric">
+            <div class="label">Score</div>
+            <div class="value" id="score">0</div>
+          </div>
+          <div class="metric">
+            <div class="label">Best</div>
+            <div class="value" id="best">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="tip" id="tip">Catch the rhythm</div>
+    </div>
+    <div class="center" aria-hidden="true">
+      <section class="panel" id="panel">
+        <h2 id="panelTitle">Thread the towers</h2>
+        <p id="panelCopy">Glide through shifting rooftop gates. Timing beats panic.</p>
+        <div class="stats" id="stats" hidden>
+          <div class="stat">
+            <div class="label">Run</div>
+            <strong id="finalScore">0</strong>
+          </div>
+          <div class="stat">
+            <div class="label">Best</div>
+            <strong id="finalBest">0</strong>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const shell = document.getElementById("shell");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const panel = document.getElementById("panel");
+      const panelTitle = document.getElementById("panelTitle");
+      const panelCopy = document.getElementById("panelCopy");
+      const stats = document.getElementById("stats");
+      const finalScore = document.getElementById("finalScore");
+      const finalBest = document.getElementById("finalBest");
+
+      const storageKey = "skyline-skimmer-best";
+      const loadBest = () => {
+        try {
+          return Number(localStorage.getItem(storageKey) || 0);
+        } catch {
+          return 0;
+        }
+      };
+      const saveBest = (score) => {
+        try {
+          localStorage.setItem(storageKey, String(score));
+        } catch {
+          /* Persistence is optional when storage is unavailable. */
+        }
+      };
+      const state = {
+        w: 620,
+        h: 920,
+        dpr: 1,
+        mode: "ready",
+        score: 0,
+        best: loadBest(),
+        time: 0,
+        shake: 0,
+        flash: 0,
+        last: performance.now(),
+        raf: 0
+      };
+
+      const bird = {
+        x: 170,
+        y: 430,
+        r: 22,
+        vy: 0,
+        rot: 0,
+        flapGlow: 0
+      };
+
+      let gates = [];
+      let motes = [];
+      let ripples = [];
+      let audioContext;
+
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+      const rand = (min, max) => min + Math.random() * (max - min);
+
+      function resize() {
+        const rect = shell.getBoundingClientRect();
+        state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+        state.w = Math.max(320, rect.width);
+        state.h = Math.max(480, rect.height);
+        canvas.width = Math.round(state.w * state.dpr);
+        canvas.height = Math.round(state.h * state.dpr);
+        ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      }
+
+      function reset(full = true) {
+        state.score = 0;
+        state.time = 0;
+        state.shake = 0;
+        state.flash = 0;
+        bird.x = Math.min(170, state.w * 0.32);
+        bird.y = state.h * 0.47;
+        bird.vy = 0;
+        bird.rot = 0;
+        bird.flapGlow = 0;
+        gates = [];
+        motes = Array.from({ length: 52 }, () => ({
+          x: rand(0, state.w),
+          y: rand(0, state.h),
+          s: rand(0.6, 2.2),
+          a: rand(0.14, 0.44)
+        }));
+        ripples = [];
+        scoreEl.textContent = "0";
+        bestEl.textContent = state.best;
+        if (full) setReadyPanel();
+      }
+
+      function setReadyPanel() {
+        state.mode = "ready";
+        shell.classList.remove("playing");
+        panel.classList.remove("hidden");
+        stats.hidden = true;
+        panelTitle.textContent = "Thread the towers";
+        panelCopy.textContent = "Glide through shifting rooftop gates. Timing beats panic.";
+      }
+
+      function setGameOver() {
+        state.mode = "over";
+        state.shake = 15;
+        state.flash = 0.4;
+        sound("crash");
+        state.best = Math.max(state.best, state.score);
+        saveBest(state.best);
+        scoreEl.textContent = state.score;
+        bestEl.textContent = state.best;
+        finalScore.textContent = state.score;
+        finalBest.textContent = state.best;
+        stats.hidden = false;
+        panelTitle.textContent = "Signal lost";
+        panelCopy.textContent = "Another run is ready.";
+        panel.classList.remove("hidden");
+        shell.classList.remove("playing");
+        pulse(14);
+      }
+
+      function startGame() {
+        reset(false);
+        state.mode = "playing";
+        shell.classList.add("playing");
+        panel.classList.add("hidden");
+        flap();
+      }
+
+      function flap() {
+        bird.vy = -520;
+        bird.flapGlow = 1;
+        ripples.push({ x: bird.x - 8, y: bird.y + 4, r: 8, a: 0.34 });
+        sound("flap");
+      }
+
+      function sound(type) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        audioContext ||= new AudioCtx();
+        const now = audioContext.currentTime;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const filter = audioContext.createBiquadFilter();
+        const settings = {
+          flap: [520, 720, 0.055, "triangle", 0.035],
+          score: [820, 1160, 0.09, "sine", 0.045],
+          crash: [170, 58, 0.22, "sawtooth", 0.06]
+        }[type];
+        if (!settings) return;
+        const [from, to, duration, wave, volume] = settings;
+        osc.type = wave;
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(type === "crash" ? 900 : 1800, now);
+        osc.frequency.setValueAtTime(from, now);
+        osc.frequency.exponentialRampToValueAtTime(to, now + duration);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      function input(event) {
+        if (event.type === "keydown" && event.code !== "Space") return;
+        event.preventDefault();
+        if (state.mode === "ready" || state.mode === "over") {
+          startGame();
+          return;
+        }
+        if (state.mode === "playing") flap();
+      }
+
+      function currentSpeed() {
+        return 235 + Math.min(115, state.score * 4.2 + state.time * 3.4);
+      }
+
+      function currentGap() {
+        return clamp(265 - state.score * 3.7 - state.time * 1.7, 168, 265);
+      }
+
+      function spawnGate() {
+        const gap = currentGap();
+        const margin = 108;
+        const wave = Math.sin(state.time * 0.75) * 52;
+        const center = clamp(rand(margin + gap / 2, state.h - 132 - gap / 2) + wave, margin + gap / 2, state.h - 132 - gap / 2);
+        gates.push({
+          x: state.w + 40,
+          w: 76,
+          gap,
+          center,
+          passed: false,
+          hue: rand(0, 1)
+        });
+      }
+
+      function pulse(amount) {
+        for (let i = 0; i < amount; i++) {
+          motes.push({
+            x: bird.x + rand(-28, 28),
+            y: bird.y + rand(-28, 28),
+            s: rand(1, 3.4),
+            a: rand(0.42, 0.9),
+            vx: rand(-80, 36),
+            vy: rand(-150, 110),
+            life: rand(0.45, 0.85)
+          });
+        }
+      }
+
+      function update(dt) {
+        state.time += dt;
+        state.shake = Math.max(0, state.shake - dt * 36);
+        state.flash = Math.max(0, state.flash - dt * 2.8);
+        bird.flapGlow = Math.max(0, bird.flapGlow - dt * 5.5);
+
+        for (const mote of motes) {
+          mote.x -= (22 + currentSpeed() * 0.035) * dt * mote.s;
+          mote.y += Math.sin(state.time * mote.s + mote.x * 0.018) * dt * 12;
+          if (mote.life) {
+            mote.life -= dt;
+            mote.x += mote.vx * dt;
+            mote.y += mote.vy * dt;
+            mote.vy += 180 * dt;
+            mote.a *= 0.985;
+          }
+          if (mote.x < -20 || mote.y > state.h + 30 || (mote.life && mote.life <= 0)) {
+            mote.x = state.w + rand(0, 80);
+            mote.y = rand(0, state.h);
+            mote.s = rand(0.6, 2.2);
+            mote.a = rand(0.12, 0.42);
+            delete mote.life;
+          }
+        }
+
+        for (const ripple of ripples) {
+          ripple.r += dt * 180;
+          ripple.a -= dt * 1.2;
+          ripple.x -= currentSpeed() * dt * 0.28;
+        }
+        ripples = ripples.filter((r) => r.a > 0);
+
+        if (state.mode !== "playing") {
+          bird.y += Math.sin(state.time * 3) * 0.35;
+          bird.rot = Math.sin(state.time * 2.4) * 0.08;
+          return;
+        }
+
+        const speed = currentSpeed();
+        bird.vy += 1320 * dt;
+        bird.y += bird.vy * dt;
+        bird.rot = clamp(bird.vy / 780, -0.55, 1.15);
+
+        if (!gates.length || gates[gates.length - 1].x < state.w - clamp(310 - state.score * 2.2, 235, 310)) {
+          spawnGate();
+        }
+
+        for (const gate of gates) {
+          gate.x -= speed * dt;
+          if (!gate.passed && gate.x + gate.w < bird.x - bird.r) {
+            gate.passed = true;
+            state.score += 1;
+            scoreEl.textContent = state.score;
+            state.best = Math.max(state.best, state.score);
+            bestEl.textContent = state.best;
+            sound("score");
+            pulse(7);
+          }
+        }
+        gates = gates.filter((g) => g.x > -g.w - 30);
+
+        const floor = state.h - 72;
+        if (bird.y + bird.r > floor || bird.y - bird.r < 0) {
+          bird.y = clamp(bird.y, bird.r, floor - bird.r);
+          setGameOver();
+          return;
+        }
+
+        for (const gate of gates) {
+          const left = gate.x;
+          const right = gate.x + gate.w;
+          const topBottom = gate.center - gate.gap / 2;
+          const bottomTop = gate.center + gate.gap / 2;
+          const closestX = clamp(bird.x, left, right);
+          const hitTop = circleRect(bird.x, bird.y, bird.r * 0.82, left, -30, gate.w, topBottom + 30, closestX);
+          const hitBottom = circleRect(bird.x, bird.y, bird.r * 0.82, left, bottomTop, gate.w, state.h - bottomTop - 72, closestX);
+          if (hitTop || hitBottom) {
+            setGameOver();
+            return;
+          }
+        }
+      }
+
+      function circleRect(cx, cy, radius, rx, ry, rw, rh) {
+        const x = clamp(cx, rx, rx + rw);
+        const y = clamp(cy, ry, ry + rh);
+        return (cx - x) * (cx - x) + (cy - y) * (cy - y) < radius * radius;
+      }
+
+      function drawBackground() {
+        const sky = ctx.createLinearGradient(0, 0, 0, state.h);
+        sky.addColorStop(0, "#112346");
+        sky.addColorStop(0.42, "#25516a");
+        sky.addColorStop(0.72, "#f0a45d");
+        sky.addColorStop(1, "#172038");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, state.w, state.h);
+
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        const sun = ctx.createRadialGradient(state.w * 0.78, state.h * 0.22, 8, state.w * 0.78, state.h * 0.22, state.w * 0.34);
+        sun.addColorStop(0, "rgba(255, 227, 143, 0.74)");
+        sun.addColorStop(1, "rgba(255, 227, 143, 0)");
+        ctx.fillStyle = sun;
+        ctx.fillRect(0, 0, state.w, state.h * 0.65);
+        ctx.restore();
+
+        for (const mote of motes) {
+          ctx.globalAlpha = mote.a;
+          ctx.fillStyle = mote.life ? "#fff1a6" : "#ffffff";
+          ctx.beginPath();
+          ctx.arc(mote.x, mote.y, mote.s, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        drawSkyline(state.h - 165, 0.24, "#17213a", 0.28);
+        drawSkyline(state.h - 112, 0.42, "#10192d", 0.58);
+      }
+
+      function drawSkyline(base, parallax, color, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = color;
+        const offset = -(state.time * currentSpeed() * parallax) % 180;
+        for (let x = offset - 180; x < state.w + 180; x += 54) {
+          const h = 70 + ((x * 13) % 86 + 86) % 86;
+          const w = 36 + ((x * 7) % 38 + 38) % 38;
+          ctx.fillRect(x, base - h, w, h);
+          ctx.fillRect(x + w * 0.25, base - h - 16, w * 0.5, 16);
+          ctx.fillStyle = "rgba(255, 207, 112, 0.24)";
+          for (let wy = base - h + 18; wy < base - 12; wy += 24) {
+            ctx.fillRect(x + 9, wy, 4, 8);
+            ctx.fillRect(x + w - 14, wy + 3, 4, 8);
+          }
+          ctx.fillStyle = color;
+        }
+        ctx.restore();
+      }
+
+      function drawGates() {
+        for (const gate of gates) {
+          const topBottom = gate.center - gate.gap / 2;
+          const bottomTop = gate.center + gate.gap / 2;
+          drawTower(gate.x, -24, gate.w, topBottom + 24, true, gate.hue);
+          drawTower(gate.x, bottomTop, gate.w, state.h - bottomTop - 72, false, gate.hue);
+          drawGateLights(gate);
+        }
+      }
+
+      function drawTower(x, y, w, h, inverted, hue) {
+        const grad = ctx.createLinearGradient(x, y, x + w, y);
+        grad.addColorStop(0, "#26334f");
+        grad.addColorStop(0.45, hue > 0.5 ? "#31515a" : "#3d365c");
+        grad.addColorStop(1, "#121a2c");
+        ctx.fillStyle = grad;
+        roundRect(x, y, w, h, 8);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(5, 8, 16, 0.18)";
+        for (let i = 1; i < 4; i++) {
+          ctx.fillRect(x + i * (w / 4), y + 8, 1, h - 16);
+        }
+
+        ctx.fillStyle = "rgba(255, 224, 139, 0.6)";
+        const startY = inverted ? y + h - 54 : y + 22;
+        for (let yy = startY; inverted ? yy > y + 20 : yy < y + h - 20; yy += inverted ? -34 : 34) {
+          ctx.fillRect(x + 14, yy, 8, 13);
+          ctx.fillRect(x + w - 22, yy + 6, 8, 13);
+        }
+
+        ctx.fillStyle = "#f2c86f";
+        if (inverted) {
+          ctx.fillRect(x - 6, y + h - 13, w + 12, 13);
+          ctx.fillRect(x + 7, y + h - 24, w - 14, 11);
+        } else {
+          ctx.fillRect(x - 6, y, w + 12, 13);
+          ctx.fillRect(x + 7, y + 13, w - 14, 11);
+        }
+      }
+
+      function drawGateLights(gate) {
+        const top = gate.center - gate.gap / 2;
+        const bottom = gate.center + gate.gap / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.55 + Math.sin(state.time * 8 + gate.x * 0.1) * 0.18;
+        ctx.strokeStyle = "#9df2ff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(gate.x - 6, top);
+        ctx.lineTo(gate.x + gate.w + 6, top);
+        ctx.moveTo(gate.x - 6, bottom);
+        ctx.lineTo(gate.x + gate.w + 6, bottom);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot);
+
+        if (bird.flapGlow > 0) {
+          ctx.globalAlpha = bird.flapGlow * 0.34;
+          ctx.fillStyle = "#ffe483";
+          ctx.beginPath();
+          ctx.ellipse(-13, 6, 42, 24, -0.12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.fillStyle = "#ffcf5f";
+        ctx.beginPath();
+        ctx.moveTo(-26, 0);
+        ctx.quadraticCurveTo(-6, -22, 26, -8);
+        ctx.quadraticCurveTo(16, 16, -12, 19);
+        ctx.quadraticCurveTo(-25, 14, -26, 0);
+        ctx.fill();
+
+        ctx.fillStyle = "#f45f6c";
+        ctx.beginPath();
+        ctx.moveTo(-10, 4);
+        ctx.quadraticCurveTo(-34, 8, -45, 27);
+        ctx.quadraticCurveTo(-20, 22, 4, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        const wingLift = Math.sin(state.time * 18) * 5 - bird.flapGlow * 10;
+        ctx.fillStyle = "#4fd2d8";
+        ctx.beginPath();
+        ctx.moveTo(-6, 3);
+        ctx.quadraticCurveTo(-20, -4 + wingLift, -29, 8 + wingLift);
+        ctx.quadraticCurveTo(-14, 12, 5, 9);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#fff9de";
+        ctx.beginPath();
+        ctx.arc(12, -7, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#162033";
+        ctx.beginPath();
+        ctx.arc(14, -6, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#f07052";
+        ctx.beginPath();
+        ctx.moveTo(25, -5);
+        ctx.lineTo(43, 0);
+        ctx.lineTo(24, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        for (const ripple of ripples) {
+          ctx.save();
+          ctx.globalAlpha = ripple.a;
+          ctx.strokeStyle = "#fff3a3";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(ripple.x, ripple.y, ripple.r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      function drawFloor() {
+        const y = state.h - 72;
+        const grad = ctx.createLinearGradient(0, y, 0, state.h);
+        grad.addColorStop(0, "#314456");
+        grad.addColorStop(1, "#121a28");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, y, state.w, 72);
+
+        const offset = -(state.time * currentSpeed()) % 54;
+        for (let x = offset - 54; x < state.w + 54; x += 54) {
+          ctx.fillStyle = "#f0c56e";
+          ctx.fillRect(x, y + 13, 32, 5);
+          ctx.fillStyle = "rgba(255,255,255,0.08)";
+          ctx.fillRect(x + 4, y + 36, 44, 2);
+        }
+      }
+
+      function roundRect(x, y, w, h, r) {
+        const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+
+      function render() {
+        ctx.save();
+        if (state.shake > 0) {
+          ctx.translate(rand(-state.shake, state.shake), rand(-state.shake, state.shake));
+        }
+        drawBackground();
+        drawGates();
+        drawBird();
+        drawFloor();
+        ctx.restore();
+
+        if (state.flash > 0) {
+          ctx.fillStyle = `rgba(255, 245, 218, ${state.flash})`;
+          ctx.fillRect(0, 0, state.w, state.h);
+        }
+      }
+
+      function frame(now) {
+        const dt = Math.min(0.033, (now - state.last) / 1000);
+        state.last = now;
+        update(dt);
+        render();
+        state.raf = requestAnimationFrame(frame);
+      }
+
+      window.addEventListener("resize", resize);
+      window.addEventListener("keydown", input, { passive: false });
+      canvas.addEventListener("pointerdown", input, { passive: false });
+      document.addEventListener("visibilitychange", () => {
+        state.last = performance.now();
+      });
+
+      resize();
+      reset(true);
+      state.raf = requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

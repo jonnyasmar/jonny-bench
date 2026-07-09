@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T22:34:39.020Z",
+  "generatedAt": "2026-07-09T22:40:06.600Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "goals": [
     {
@@ -8,7 +8,26 @@
       "prompt": "Build a polished, playable Flappy Bird–style game as a static web app.\n\nRequirements:\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Controls: spacebar AND click/tap to flap.\n- Score, best score (persisted), game-over and restart flow.\n- Your own original visual style — do not copy Flappy Bird's art.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.\n",
       "capMinutes": 30,
       "suggestedBy": null,
-      "runs": []
+      "runs": [
+        {
+          "runId": "gpt-5.5--20260709-1835",
+          "goal": "flappy",
+          "model": "gpt-5.5",
+          "cli": "codex",
+          "cliVersion": "codex-cli 0.143.0",
+          "startedAt": "2026-07-09T22:35:01.051Z",
+          "wallSeconds": 286,
+          "totalTokens": null,
+          "totalCostUsd": null,
+          "status": "ok",
+          "exitReason": "completed",
+          "displayName": "GPT-5.5",
+          "vendor": "OpenAI",
+          "appPath": "goals/flappy/runs/gpt-5.5--20260709-1835/app/index.html",
+          "transcriptPath": "goals/flappy/runs/gpt-5.5--20260709-1835/transcript.jsonl",
+          "screenshotPath": "goals/flappy/runs/gpt-5.5--20260709-1835/screenshot.png"
+        }
+      ]
     },
     {
       "slug": "synth",
