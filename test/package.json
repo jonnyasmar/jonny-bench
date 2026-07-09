@@ -1,0 +1,4 @@
+{
+  "type": "module",
+  "main": "./jonny-bench.test.mjs"
+}
