@@ -395,21 +395,17 @@ function parseJsonLines(text) {
   return values;
 }
 
-function sumUsageObject(usage) {
-  if (!usage || typeof usage !== 'object') return 0;
-  if (Number.isFinite(usage.totalTokens)) return usage.totalTokens;
-  if (Number.isFinite(usage.total_tokens)) return usage.total_tokens;
-  let total = 0;
-  for (const [key, value] of Object.entries(usage)) {
-    if (!Number.isFinite(value)) continue;
-    if (/token/i.test(key)) total += value;
-  }
-  return total;
-}
-
 function codexUsageTotal(usage) {
   if (!usage || typeof usage !== 'object') return 0;
   return (Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0)
+    + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0);
+}
+
+function claudeUsageTotal(usage) {
+  if (!usage || typeof usage !== 'object') return 0;
+  return (Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0)
+    + (Number.isFinite(usage.cache_read_input_tokens) ? usage.cache_read_input_tokens : 0)
+    + (Number.isFinite(usage.cache_creation_input_tokens) ? usage.cache_creation_input_tokens : 0)
     + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0);
 }
 
@@ -440,7 +436,7 @@ export function extractUsage(cli, text) {
   if (cli === 'claude-code') {
     const final = events.findLast((event) => event.type === 'result' || Number.isFinite(event.total_cost_usd));
     if (!final) return { totalTokens: null, totalCostUsd: null };
-    const usageTotal = sumUsageObject(final.usage ?? final.message?.usage);
+    const usageTotal = claudeUsageTotal(final.usage ?? final.message?.usage);
     return {
       totalTokens: usageTotal > 0 ? usageTotal : null,
       totalCostUsd: Number.isFinite(final.total_cost_usd) ? final.total_cost_usd : null
@@ -471,8 +467,9 @@ async function copyTranscript(recipe, vars, runDir) {
 }
 
 async function readUsageSource(transcriptPath, outputFile) {
+  if (outputFile && await pathExists(outputFile)) return readFile(outputFile, 'utf8');
   if (transcriptPath) return readFile(transcriptPath, 'utf8');
-  return readFile(outputFile, 'utf8');
+  return '';
 }
 
 function assertRunHomeTarget(file, runHome, label) {

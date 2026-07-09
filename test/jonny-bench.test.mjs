@@ -17,6 +17,7 @@ async function makeRepo({
   mode = 'normal',
   capMinutes = 1,
   modelSlug = 'fake-model',
+  cliName = 'fake',
   includeAuth = false,
   authWriteTo = '$RUN_HOME/auth/auth.json',
   seedTo = '$RUN_HOME/auth/seed.json',
@@ -37,7 +38,7 @@ async function makeRepo({
   await mkdir(path.join(root, 'goals', 'tiny'), { recursive: true });
   await writeFile(path.join(root, 'package.json'), '{"type":"module","private":true}\n');
   await writeFile(path.join(root, 'models.json'), JSON.stringify({
-    [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: 'fake', modelArg: 'fake-model-arg' },
+    [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' },
     'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg' }
   }, null, 2));
   const fakeEnv = {
@@ -70,7 +71,7 @@ async function makeRepo({
       to: seedTo
     }];
   }
-  await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ fake: fakeRecipe }, null, 2));
+  await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ [cliName]: fakeRecipe, fake: fakeRecipe }, null, 2));
   await writeFile(path.join(root, 'goals', 'tiny', 'goal.md'), `---
 slug: tiny
 title: Tiny App
@@ -221,6 +222,17 @@ test('authExec writes stdout 0600 and seedFiles pick and merge JSON into RUN_HOM
   assert.equal(existsSync(record.env.HOME), false, 'RUN_HOME should be removed after the run');
 });
 
+test('claude usage extraction prefers cli-output over transcript', async () => {
+  const { root, env } = await makeRepo({ cliName: 'claude-code' });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+
+  const runDir = await findRunDir(root);
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.equal(meta.totalTokens, 12);
+  assert.equal(meta.totalCostUsd, 0.12);
+});
+
 test('authExec and seedFiles destination paths must stay inside RUN_HOME before run allocation', async () => {
   const authCase = await makeRepo({ includeAuth: true, authWriteTo: '$HOME/outside-auth.json' });
   const authResult = runBench(authCase.root, authCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
@@ -288,9 +300,18 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
   const claude = [
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 3, output_tokens: 4 } } }),
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 9, output_tokens: 10 } } }),
-    JSON.stringify({ type: 'result', total_cost_usd: 1.23, usage: { input_tokens: 5, output_tokens: 6, cache_creation_input_tokens: 7 } })
+    JSON.stringify({
+      type: 'result',
+      total_cost_usd: 1.4622195,
+      usage: {
+        input_tokens: 3947,
+        output_tokens: 30239,
+        cache_read_input_tokens: 2314925,
+        cache_creation_input_tokens: 50259
+      }
+    })
   ].join('\n');
-  assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 18, totalCostUsd: 1.23 });
+  assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 2399370, totalCostUsd: 1.4622195 });
 
   const codex = [
     JSON.stringify({
