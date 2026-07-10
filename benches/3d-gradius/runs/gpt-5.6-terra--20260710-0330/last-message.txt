@@ -1,0 +1,3 @@
+Built the playable static game in [index.html](/private/var/folders/_l/4gzjzznn2z73r8kldgtyxsmw0000gn/T/jonny-bench-work-7CYvhQ/index.html).
+
+Includes 3D neon-rift combat, weapon upgrades, escalating waves, pickups, responsive controls, touch controls, HUD, damage feedback, particles, and restart flow. JavaScript parsing was verified.

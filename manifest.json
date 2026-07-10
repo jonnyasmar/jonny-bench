@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T07:30:44.023Z",
+  "generatedAt": "2026-07-10T07:33:31.237Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -9,6 +9,46 @@
       "capMinutes": 30,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "gpt-5.6-terra--20260710-0330",
+          "bench": "3d-gradius",
+          "model": "gpt-5.6-terra",
+          "effort": "high",
+          "cli": "codex",
+          "cliVersion": "codex-cli 0.144.0",
+          "startedAt": "2026-07-10T07:30:54.720Z",
+          "wallSeconds": 155,
+          "totalTokens": 108660,
+          "totalCostUsd": null,
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "exec",
+            "-C",
+            "$WORKDIR",
+            "-m",
+            "gpt-5.6-terra",
+            "-c",
+            "model_reasoning_effort=high",
+            "-c",
+            "model_reasoning_summary=detailed",
+            "--json",
+            "--output-last-message",
+            "$RUN_DIR/last-message.txt",
+            "--sandbox",
+            "workspace-write",
+            "-c",
+            "sandbox_workspace_write.network_access=true",
+            "--ignore-user-config",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "GPT-5.6 Terra",
+          "vendor": "OpenAI",
+          "appPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/transcript.jsonl",
+          "screenshotPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/screenshot.png"
+        },
         {
           "runId": "gpt-5.6-sol--20260710-0323",
           "bench": "3d-gradius",
