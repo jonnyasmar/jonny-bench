@@ -2,7 +2,7 @@
   "runId": "gemini-3.1-pro--20260710-0938",
   "bench": "3d-gradius",
   "model": "gemini-3.1-pro",
-  "effort": null,
+  "effort": "high",
   "cli": "antigravity",
   "cliVersion": "1.1.1",
   "startedAt": "2026-07-10T13:38:11.390Z",
