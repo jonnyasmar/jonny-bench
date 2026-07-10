@@ -1030,7 +1030,13 @@ export async function regenerateManifest() {
         const screenshot = path.join(runDir, 'screenshot.png');
         runs.push({
           ...meta,
-          ...(modelInfo ? { displayName: modelInfo.displayName, vendor: modelInfo.vendor } : {}),
+          ...(modelInfo
+            ? {
+                displayName: modelInfo.displayName,
+                vendor: modelInfo.vendor,
+                ...(typeof modelInfo.flagship === 'boolean' ? { flagship: modelInfo.flagship } : {})
+              }
+            : {}),
           appPath: await pathExists(appIndex) ? `${relRun}/app/index.html` : null,
           transcriptPath: transcript ? path.relative(process.cwd(), transcript).replaceAll(path.sep, '/') : null,
           screenshotPath: await pathExists(screenshot) ? `${relRun}/screenshot.png` : null
@@ -1089,6 +1095,9 @@ export async function validateManifest(manifest = null) {
       if (run.totalCostUsd !== null && !Number.isFinite(run.totalCostUsd)) errors.push(`${runPrefix}.totalCostUsd must be number|null`);
       if (run.effort !== undefined && run.effort !== null && typeof run.effort !== 'string') {
         errors.push(`${runPrefix}.effort must be an optional string|null`);
+      }
+      if (run.flagship !== undefined && typeof run.flagship !== 'boolean') {
+        errors.push(`${runPrefix}.flagship must be an optional boolean`);
       }
       if (run.argv !== undefined && (!Array.isArray(run.argv) || run.argv.some((arg) => typeof arg !== 'string'))) {
         errors.push(`${runPrefix}.argv must be an optional array of strings`);

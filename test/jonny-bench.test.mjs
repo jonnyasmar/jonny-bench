@@ -30,6 +30,7 @@ async function makeRepo({
   appPathLeak = false,
   usePathResolvedBin = false,
   modelEffort = 'high',
+  modelFlagship = true,
   includeCapTimeout = false
 } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
@@ -48,9 +49,10 @@ async function makeRepo({
   await writeFile(path.join(root, 'package.json'), '{"type":"module","private":true}\n');
   const primaryModel = { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' };
   if (modelEffort !== undefined) primaryModel.effort = modelEffort;
+  if (modelFlagship !== undefined) primaryModel.flagship = modelFlagship;
   await writeFile(path.join(root, 'models.json'), JSON.stringify({
     [modelSlug]: primaryModel,
-    'no-effort-model': { displayName: 'No Effort Model', vendor: 'Test', cli: cliName, modelArg: 'no-effort-arg' },
+    'no-effort-model': { displayName: 'No Effort Model', vendor: 'Test', cli: cliName, modelArg: 'no-effort-arg', flagship: false },
     'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg', effort: 'high' }
   }, null, 2));
   let recipeBin = process.execPath;
@@ -302,6 +304,7 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(manifest.benches[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
   assert.equal(manifest.benches[0].runs[0].displayName, 'fake-model');
   assert.equal(manifest.benches[0].runs[0].vendor, 'Test');
+  assert.equal(manifest.benches[0].runs[0].flagship, true);
   assert.equal(manifest.benches[0].runs[0].effort, 'high');
   assert.deepEqual(manifest.benches[0].runs[0].argv, meta.argv);
 });
@@ -326,6 +329,8 @@ test('EFFORT substitution records effort and omits flag pairs when effort is nul
   assert.equal(meta.argv.includes('--effort'), false);
   assert.equal(meta.argv.includes('--config'), false);
   assert.equal(meta.argv.some((arg) => arg.includes('effort=')), false);
+  const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.benches[0].runs[0].flagship, false);
 });
 
 test('CAP_MINUTES substitutes as Nm and omits its flag pair when null', () => {

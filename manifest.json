@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T13:41:01.227Z",
+  "generatedAt": "2026-07-10T20:03:36.127Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -44,6 +44,7 @@
           "redactions": 0,
           "displayName": "Gemini 3.1 Pro",
           "vendor": "Google",
+          "flagship": true,
           "transcriptPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0938/cli-output.jsonl"
         },
         {
@@ -79,6 +80,7 @@
           "redactions": 0,
           "displayName": "Fable 5",
           "vendor": "Anthropic",
+          "flagship": true,
           "transcriptPath": "benches/3d-gradius/runs/fable-5--20260710-0913/transcript.jsonl"
         },
         {
@@ -211,6 +213,7 @@
           "redactions": 0,
           "displayName": "Gemini 3.1 Pro",
           "vendor": "Google",
+          "flagship": true,
           "appPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/cli-output.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/screenshot.png"
@@ -243,6 +246,7 @@
           "redactions": 0,
           "displayName": "Grok 4.5",
           "vendor": "xAI",
+          "flagship": true,
           "appPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/screenshot.png"
@@ -323,6 +327,7 @@
           "redactions": 0,
           "displayName": "GPT-5.6 Sol",
           "vendor": "OpenAI",
+          "flagship": true,
           "appPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/screenshot.png"
@@ -397,6 +402,7 @@
           "redactions": 0,
           "displayName": "Fable 5",
           "vendor": "Anthropic",
+          "flagship": true,
           "appPath": "benches/3d-gradius/runs/fable-5--20260710-0242/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/fable-5--20260710-0242/transcript.jsonl",
           "screenshotPath": null
