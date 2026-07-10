@@ -1,14 +1,49 @@
 {
-  "generatedAt": "2026-07-10T12:21:36.206Z",
+  "generatedAt": "2026-07-10T12:24:46.163Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
       "slug": "3d-gradius",
       "title": "Playable 3D Gradius built with Three.js",
-      "prompt": "\nBuild a polished, playable 3D Gradius game built with Three.js.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Your own original visual style — do not copy Gradius exactly.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.\n",
+      "prompt": "# jonny-bench: global instructions\n\nThese rules apply to every bench in this repo, on top of the specific bench prompt below. They exist so you don't have to guess at the environment your submission runs in or gets evaluated in.\n\n## Deployment environment\n\nYour finished submission is published as a static site nested under a subdirectory path (e.g. `https://jonnyasmar.github.io/jonny-bench/benches/<slug>/runs/<run-id>/app/`), not the domain root, with no server-side routing or rewrites.\n\n- Use relative asset paths only (`./assets/foo.js`, `assets/foo.css`). Never use root-absolute paths (`/assets/foo.js`) — they resolve fine in local dev or when served from a server's root, but 404 once nested under a subdirectory.\n- If you use a bundler (Vite, webpack, esbuild, etc.), set its base/public-path option to relative (e.g. Vite's `base: './'`) so the build works from any subdirectory, not just the root.\n- Verify your build by opening its `index.html` from a nested folder, or via `file://`, not only through a dev server bound to `/`.\n\n---\n\nBuild a polished, playable 3D Gradius game built with Three.js.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Your own original visual style — do not copy Gradius exactly.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.\n",
       "capMinutes": 90,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "opus-4.8--20260710-0818",
+          "bench": "3d-gradius",
+          "model": "opus-4.8",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.206 (Claude Code)",
+          "startedAt": "2026-07-10T12:18:03.263Z",
+          "wallSeconds": 403,
+          "rootAbsolutePaths": [],
+          "totalTokens": 195266,
+          "totalCostUsd": 0.8726415,
+          "status": "failed",
+          "exitReason": "error",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-opus-4-8",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "e3a5e8d8-b7f9-4405-a3f2-0e9554a0e2a0",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "Opus 4.8",
+          "vendor": "Anthropic",
+          "appPath": null,
+          "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0818/transcript.jsonl",
+          "screenshotPath": null
+        },
         {
           "runId": "opus-4.8--20260710-0731",
           "bench": "3d-gradius",
