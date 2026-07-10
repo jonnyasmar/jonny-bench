@@ -1,7 +1,7 @@
 ---
 slug: 3d-gradius
 title: Playable 3D Gradius built with Three.js
-capMinutes: 30
+capMinutes: 90
 suggestedBy: null
 created: 2026-07-09
 ---
