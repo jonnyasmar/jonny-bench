@@ -98,7 +98,7 @@ async function allocateRun(benchSlug, modelSlug) {
   }
 }
 
-function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId }) {
+function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId, effort = null }) {
   const home = process.env.HOME || os.homedir();
   const user = process.env.USER || os.userInfo().username;
   return {
@@ -106,6 +106,7 @@ function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId }) {
     WORKDIR: workdir,
     RUN_DIR: runDir,
     MODEL_ARG: modelArg,
+    EFFORT: effort,
     PROMPT: prompt,
     SESSION_ID: sessionId,
     HOME: home,
@@ -116,12 +117,48 @@ function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId }) {
 function substitute(value, vars) {
   return String(value).replace(/\$([A-Z0-9_]+)/g, (_, key) => {
     if (!(key in vars)) return `$${key}`;
-    return vars[key];
+    return vars[key] ?? '';
   });
 }
 
+function referencesEffort(value) {
+  return /\$EFFORT\b/.test(String(value));
+}
+
+function hasEffort(vars) {
+  return typeof vars.EFFORT === 'string' && vars.EFFORT.length > 0;
+}
+
+function shouldDropPreviousFlag(recipeArgv, index) {
+  if (index < 1) return false;
+  const previous = String(recipeArgv[index - 1]);
+  const current = String(recipeArgv[index]);
+  return previous.startsWith('-') && !previous.includes('=') && !current.startsWith('-');
+}
+
+function buildSpawnArgvWithMeta(recipeArgv = [], vars) {
+  const argv = [];
+  const metaArgv = [];
+  for (let index = 0; index < recipeArgv.length; index += 1) {
+    const template = String(recipeArgv[index]);
+    if (referencesEffort(template) && !hasEffort(vars)) {
+      if (shouldDropPreviousFlag(recipeArgv, index)) {
+        argv.pop();
+        metaArgv.pop();
+      }
+      continue;
+    }
+    const substituted = substitute(template, vars);
+    argv.push(substituted);
+    if (template.includes('$PROMPT')) metaArgv.push('[prompt]');
+    else if (/\$(?:RUN_DIR|RUN_HOME|WORKDIR|HOME|USER)\b/.test(template)) metaArgv.push(template);
+    else metaArgv.push(substituted);
+  }
+  return { argv, metaArgv };
+}
+
 function buildSpawnArgv(recipeArgv = [], vars) {
-  return recipeArgv.map((arg) => substitute(arg, vars));
+  return buildSpawnArgvWithMeta(recipeArgv, vars).argv;
 }
 
 function redactedSpawnArgv(recipeArgv = [], argv = []) {
@@ -582,6 +619,7 @@ async function writeDryRun(bench, modelSlug, model, runId, runDir, options) {
     runId,
     bench: bench.slug,
     model: modelSlug,
+    effort: model.effort ?? null,
     cli: model.cli,
     cliVersion: null,
     startedAt: new Date().toISOString(),
@@ -614,7 +652,8 @@ async function prepareRunHome(bench, modelSlug, model, recipe) {
     runDir: '',
     modelArg: model.modelArg || modelSlug,
     prompt: bench.prompt,
-    sessionId
+    sessionId,
+    effort: model.effort ?? null
   });
   try {
     await copyCreds(runHome, recipe.credsFiles);
@@ -636,7 +675,8 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     runDir,
     modelArg: model.modelArg || modelSlug,
     prompt: bench.prompt,
-    sessionId
+    sessionId,
+    effort: model.effort ?? null
   });
   let keepHomeNote = null;
   try {
@@ -646,8 +686,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     const env = buildChildEnv(recipe.env, vars, preflightInfo.childPath);
     const cliVersion = await runVersion(recipe, preflightInfo.binPath, env, workdir);
     const recipeArgv = recipe.argv || [];
-    const argv = buildSpawnArgv(recipeArgv, vars);
-    const metaArgv = redactedSpawnArgv(recipeArgv, argv);
+    const { argv, metaArgv } = buildSpawnArgvWithMeta(recipeArgv, vars);
     const startedAt = new Date().toISOString();
     const result = await runStreaming(preflightInfo.binPath, argv, {
       cwd: workdir,
@@ -684,6 +723,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
       runId,
       bench: bench.slug,
       model: modelSlug,
+      effort: model.effort ?? null,
       cli: model.cli,
       cliVersion,
       startedAt,
@@ -977,6 +1017,9 @@ export async function validateManifest(manifest = null) {
       if (!Number.isFinite(run.wallSeconds)) errors.push(`${runPrefix}.wallSeconds must be number`);
       if (run.totalTokens !== null && !Number.isFinite(run.totalTokens)) errors.push(`${runPrefix}.totalTokens must be number|null`);
       if (run.totalCostUsd !== null && !Number.isFinite(run.totalCostUsd)) errors.push(`${runPrefix}.totalCostUsd must be number|null`);
+      if (run.effort !== undefined && run.effort !== null && typeof run.effort !== 'string') {
+        errors.push(`${runPrefix}.effort must be an optional string|null`);
+      }
       if (run.argv !== undefined && (!Array.isArray(run.argv) || run.argv.some((arg) => typeof arg !== 'string'))) {
         errors.push(`${runPrefix}.argv must be an optional array of strings`);
       }

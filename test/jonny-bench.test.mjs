@@ -28,7 +28,8 @@ async function makeRepo({
   streamLeak = null,
   artifactLeak = null,
   appPathLeak = false,
-  usePathResolvedBin = false
+  usePathResolvedBin = false,
+  modelEffort = 'high'
 } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
   const home = path.join(root, 'real-home');
@@ -44,9 +45,12 @@ async function makeRepo({
   }
   await mkdir(path.join(root, 'benches', 'tiny'), { recursive: true });
   await writeFile(path.join(root, 'package.json'), '{"type":"module","private":true}\n');
+  const primaryModel = { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' };
+  if (modelEffort !== undefined) primaryModel.effort = modelEffort;
   await writeFile(path.join(root, 'models.json'), JSON.stringify({
-    [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' },
-    'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg' }
+    [modelSlug]: primaryModel,
+    'no-effort-model': { displayName: 'No Effort Model', vendor: 'Test', cli: cliName, modelArg: 'no-effort-arg' },
+    'fable-5': { displayName: 'Fable 5', vendor: 'Test', cli: 'fake', modelArg: 'fable-model-arg', effort: 'high' }
   }, null, 2));
   let recipeBin = process.execPath;
   let customBin = null;
@@ -73,7 +77,7 @@ async function makeRepo({
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
-    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '$PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
+    argv: [fakeCli, '--model', '$MODEL_ARG', '--effort', '$EFFORT', '--config', 'effort=$EFFORT', '--session', '$SESSION_ID', '--prompt', '$PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
     transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
     preCreateDirs: ['$RUN_HOME/.fake']
   };
@@ -225,17 +229,21 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(record.env.PATH, expectedChildPath(path.dirname(process.execPath)));
   assert.equal(record.argv[0], '--model');
   assert.equal(record.argv[1], 'fake-model-arg');
-  assert.equal(record.argv[2], '--session');
-  assert.match(record.argv[3], /^[0-9a-f-]{36}$/);
-  assert.equal(record.argv[4], '--prompt');
-  assert.equal(record.argv[5], 'Build a tiny app.\nKeep this prompt as one argv element.\n');
-  assert.equal(record.argv[6], '--artifact');
-  assert.ok(path.isAbsolute(record.argv[7]));
-  assert.equal(record.argv[8], '--home-template');
-  assert.ok(path.isAbsolute(record.argv[9]));
-  assert.equal(record.argv.length, 10);
+  assert.equal(record.argv[2], '--effort');
+  assert.equal(record.argv[3], 'high');
+  assert.equal(record.argv[4], '--config');
+  assert.equal(record.argv[5], 'effort=high');
+  assert.equal(record.argv[6], '--session');
+  assert.match(record.argv[7], /^[0-9a-f-]{36}$/);
+  assert.equal(record.argv[8], '--prompt');
+  assert.equal(record.argv[9], 'Build a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.argv[10], '--artifact');
+  assert.ok(path.isAbsolute(record.argv[11]));
+  assert.equal(record.argv[12], '--home-template');
+  assert.ok(path.isAbsolute(record.argv[13]));
+  assert.equal(record.argv.length, 14);
   assert.equal(record.env.PROMPT_COPY, 'Build a tiny app.\nKeep this prompt as one argv element.\n');
-  assert.equal(record.env.CUSTOM_ENV, `model=fake-model-arg session=${record.argv[3]}`);
+  assert.equal(record.env.CUSTOM_ENV, `model=fake-model-arg session=${record.argv[7]}`);
 
   assert.ok(record.cred.path.startsWith(record.env.HOME));
   assert.equal(record.cred.mode, 0o600);
@@ -248,21 +256,45 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(meta.exitReason, 'completed');
   assert.equal(meta.bench, 'tiny');
   assert.equal(meta.model, 'fake-model');
+  assert.equal(meta.effort, 'high');
   assert.equal(meta.cli, 'fake');
   assert.equal(meta.totalTokens, null);
   assert.equal(meta.totalCostUsd, null);
-  assert.deepEqual(meta.argv, [fakeCli, '--model', 'fake-model-arg', '--session', record.argv[3], '--prompt', '[prompt]', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json']);
-  assert.equal(path.isAbsolute(meta.argv[7]), false);
-  assert.equal(meta.argv[7].includes(root), false);
-  assert.equal(path.isAbsolute(meta.argv[9]), false);
-  assert.equal(meta.argv[9].includes(home), false);
+  assert.deepEqual(meta.argv, [fakeCli, '--model', 'fake-model-arg', '--effort', 'high', '--config', 'effort=high', '--session', record.argv[7], '--prompt', '[prompt]', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json']);
+  assert.equal(path.isAbsolute(meta.argv[11]), false);
+  assert.equal(meta.argv[11].includes(root), false);
+  assert.equal(path.isAbsolute(meta.argv[13]), false);
+  assert.equal(meta.argv[13].includes(home), false);
 
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
   assert.equal(manifest.benches[0].runs[0].appPath.endsWith('/app/index.html'), true);
   assert.equal(manifest.benches[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
   assert.equal(manifest.benches[0].runs[0].displayName, 'fake-model');
   assert.equal(manifest.benches[0].runs[0].vendor, 'Test');
+  assert.equal(manifest.benches[0].runs[0].effort, 'high');
   assert.deepEqual(manifest.benches[0].runs[0].argv, meta.argv);
+});
+
+test('EFFORT substitution records effort and omits flag pairs when effort is null', async () => {
+  const { root, env } = await makeRepo();
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'no-effort-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+
+  const runDir = await findRunDir(root);
+  const record = JSON.parse(await readFile(path.join(runDir, 'fake-record.json'), 'utf8'));
+  assert.equal(record.argv.includes('--effort'), false);
+  assert.equal(record.argv.includes('--config'), false);
+  assert.equal(record.argv.some((arg) => arg.includes('effort=')), false);
+  assert.equal(record.argv[0], '--model');
+  assert.equal(record.argv[1], 'no-effort-arg');
+  assert.equal(record.argv[2], '--session');
+  assert.equal(record.argv[4], '--prompt');
+
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.equal(meta.effort, null);
+  assert.equal(meta.argv.includes('--effort'), false);
+  assert.equal(meta.argv.includes('--config'), false);
+  assert.equal(meta.argv.some((arg) => arg.includes('effort=')), false);
 });
 
 test('child PATH is minimal and recipe bin is resolved before spawn', async () => {

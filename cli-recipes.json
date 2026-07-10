@@ -1,5 +1,5 @@
 {
-  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $EFFORT=reasoning effort from models.json or null, $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. If an argv element references $EFFORT and the model has no effort, that element and its preceding flag element are omitted. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
   "claude-code": {
     "bin": "claude",
     "versionArgv": [
@@ -38,6 +38,8 @@
       "-p",
       "--model",
       "$MODEL_ARG",
+      "--effort",
+      "$EFFORT",
       "--output-format",
       "stream-json",
       "--verbose",
@@ -69,6 +71,8 @@
       "-m",
       "$MODEL_ARG",
       "-c",
+      "model_reasoning_effort=$EFFORT",
+      "-c",
       "model_reasoning_summary=detailed",
       "--json",
       "--output-last-message",
@@ -84,6 +88,62 @@
     "preCreateDirs": [
       "$RUN_HOME/.codex"
     ],
-    "usage": "cli-output.jsonl wrappers: stdout text contains JSONL; last type=turn.completed usage.{input_tokens,output_tokens}; no USD field (ChatGPT plan, unmetered). reasoning summaries enabled via model_reasoning_summary=detailed (capture-level observability)."
+    "usage": "cli-output.jsonl wrappers: stdout text contains JSONL; last type=turn.completed usage.{input_tokens,output_tokens}, or rollout transcript token_count total_token_usage.total_tokens fallback; input_tokens already includes cached tokens. no USD field (ChatGPT plan, unmetered). reasoning effort is pinned with model_reasoning_effort=$EFFORT; reasoning summaries enabled via model_reasoning_summary=detailed."
+  },
+  "grok": {
+    "bin": "grok",
+    "versionArgv": [
+      "--version"
+    ],
+    "credsFiles": [
+      ".grok/auth.json"
+    ],
+    "env": {
+      "HOME": "$RUN_HOME"
+    },
+    "argv": [
+      "-p",
+      "$PROMPT",
+      "--model",
+      "$MODEL_ARG",
+      "--reasoning-effort",
+      "$EFFORT",
+      "--always-approve",
+      "--output-format",
+      "streaming-json",
+      "--verbatim"
+    ],
+    "transcriptGlob": "$RUN_HOME/.grok/sessions/**/events.jsonl",
+    "preCreateDirs": [
+      "$RUN_HOME/.grok"
+    ],
+    "usage": "No stable total-usage event was verified from the Grok streaming-json probe in this environment; extraction records totalTokens and totalCostUsd as null until a real output shape is proven. reasoning effort is pinned with --reasoning-effort $EFFORT."
+  },
+  "gemini": {
+    "bin": "gemini",
+    "versionArgv": [
+      "--version"
+    ],
+    "credsFiles": [
+      ".gemini/oauth_creds.json",
+      ".gemini/google_accounts.json"
+    ],
+    "env": {
+      "HOME": "$RUN_HOME"
+    },
+    "argv": [
+      "-p",
+      "$PROMPT",
+      "-m",
+      "$MODEL_ARG",
+      "-o",
+      "stream-json",
+      "-y"
+    ],
+    "transcriptGlob": "",
+    "preCreateDirs": [
+      "$RUN_HOME/.gemini"
+    ],
+    "usage": "No reasoning-effort knob and no stable total-usage event was verified from Gemini stream-json in this environment; extraction records totalTokens and totalCostUsd as null and cli-output.jsonl remains the transcript fallback."
   }
 }

@@ -45,6 +45,19 @@ benches/<slug>/runs/<runId>/
 
 Contestants are models via CLI, not abstract model names. For example, `Opus 4.8 via Claude Code v2.1.205` is the contestant, because the CLI, flags, permissions, and transcript format are part of the run.
 
+Effort policy: jonny-bench pins the high-equivalent reasoning effort wherever the CLI exposes a knob: Claude Code uses `--effort`, Codex uses `model_reasoning_effort`, and Grok uses `--reasoning-effort`. Gemini exposes no equivalent in the verified CLI surface, so Gemini runs at its default and records `effort: null`.
+
+| Model | Vendor | CLI | Effort |
+| --- | --- | --- | --- |
+| Opus 4.8 | Anthropic | claude-code | high |
+| Sonnet 5 | Anthropic | claude-code | high |
+| Fable 5 | Anthropic | claude-code | high |
+| GPT-5.5 | OpenAI | codex | high |
+| GPT-5.6 Sol | OpenAI | codex | high |
+| GPT-5.6 Terra | OpenAI | codex | high |
+| Grok 4.5 | xAI | grok | high |
+| Gemini 3.1 Pro | Google | gemini | null |
+
 Add models in `models.json`. CLI invocation details live in `cli-recipes.json`.
 
 ## Benches
