@@ -31,7 +31,7 @@ function defaultContext(options = {}) {
 }
 
 function truncateMatch(value) {
-  return value.length > 24 ? `${value.slice(0, 24)}…` : value;
+  return `${String(value).slice(0, 8)}…`;
 }
 
 function pushFinding(findings, rule, match, line) {

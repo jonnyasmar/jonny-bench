@@ -195,7 +195,7 @@ test('leak scanner covers secrets, emails, truncation, and home paths', () => {
   assert.equal(scanText('noreply@anthropic.com jonny@asmar.co', { realHome }).length, 0);
   assert.equal(scanText('/var/folders/alice/tmp /tmp/jonny-bench-work', { realHome }).length, 0);
   const truncated = scanText('sk-ant-abcdefghijklmnopqrstuvwxyz', { realHome })[0].match;
-  assert.equal(truncated, 'sk-ant-abcdefghijklmnopq…');
+  assert.equal(truncated, 'sk-ant-a…');
 });
 
 test('fake CLI receives exact env, substituted argv, copied creds, and publishes artifact metadata', async () => {

@@ -21,7 +21,7 @@ function usage(exitCode = 1) {
   jonny-bench run <goal> --model <slug> [--dry-run] [--no-push] [--keep-home] [--no-screenshot] [--allow-leaks]
   jonny-bench run --all --model <slug> [...]
   jonny-bench list
-  jonny-bench regen [--no-push]`;
+  jonny-bench regen [--no-push] [--no-commit]`;
   console.error(text);
   process.exit(exitCode);
 }
@@ -677,10 +677,11 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
       status,
       exitReason
     };
+    const redactionState = await redactRunArtifacts(runDir);
     if (!options.noScreenshot && status === 'ok') {
       await tryScreenshot(path.join(runDir, 'app'), path.join(runDir, 'screenshot.png'));
     }
-    await writeMetaAfterLeakGate(runDir, meta, options);
+    await writeMetaAfterLeakGate(runDir, meta, options, redactionState);
     return meta;
   } finally {
     await rm(workdir, { recursive: true, force: true });
@@ -743,10 +744,14 @@ async function collectRunTextArtifacts(runDir) {
   return files;
 }
 
-async function runLeakGate(runDir, options) {
+async function redactRunArtifacts(runDir) {
   const files = await collectRunTextArtifacts(runDir);
   let redactions = 0;
   for (const file of files) redactions += await redactFile(file);
+  return { files, redactions };
+}
+
+async function scanRunArtifacts(files, options) {
   const findings = await scanPaths(files);
   if (findings.length) {
     const lines = findings.map((finding) => {
@@ -760,13 +765,13 @@ async function runLeakGate(runDir, options) {
       throw new LeakGateError('Leak gate blocked publish; rerun with --allow-leaks to override.');
     }
   }
-  return redactions;
 }
 
-async function writeMetaAfterLeakGate(runDir, meta, options) {
-  const redactions = await runLeakGate(runDir, options);
-  await writeJson(path.join(runDir, 'meta.json'), { ...meta, redactions });
-  return redactions;
+async function writeMetaAfterLeakGate(runDir, meta, options, redactionState = null) {
+  const state = redactionState || await redactRunArtifacts(runDir);
+  await scanRunArtifacts(state.files, options);
+  await writeJson(path.join(runDir, 'meta.json'), { ...meta, redactions: state.redactions });
+  return state.redactions;
 }
 
 async function gitAddCommitPush(goalSlug, modelSlug, runId, runDir, noPush) {
@@ -863,10 +868,11 @@ async function commandRun(args) {
 
 async function commandRegen(args) {
   const noPush = args.includes('--no-push');
+  const noCommit = args.includes('--no-commit');
   await assertCleanForPublish();
   const manifest = await regenerateManifest();
   await validateManifest(manifest);
-  if (noPush) return;
+  if (noCommit) return;
   let result = await runCapture('git', ['add', 'manifest.json'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
   if (result.code !== 0) throw new Error(`git add failed: ${result.stderr.trim()}`);
   result = await runCapture('git', ['commit', '-m', 'bench: regenerate manifest'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
