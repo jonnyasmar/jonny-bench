@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T12:25:44.285Z",
+  "generatedAt": "2026-07-10T13:13:04.412Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -9,6 +9,41 @@
       "capMinutes": 90,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "sonnet-5--20260710-0824",
+          "bench": "3d-gradius",
+          "model": "sonnet-5",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.206 (Claude Code)",
+          "startedAt": "2026-07-10T12:24:48.203Z",
+          "wallSeconds": 2887,
+          "rootAbsolutePaths": [],
+          "totalTokens": 2158544,
+          "totalCostUsd": 10.355725500000002,
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-sonnet-5",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "74f86738-2508-4912-a258-08ff1a0c316b",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "Sonnet 5",
+          "vendor": "Anthropic",
+          "appPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/transcript.jsonl",
+          "screenshotPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/screenshot.png"
+        },
         {
           "runId": "opus-4.8--20260710-0818",
           "bench": "3d-gradius",

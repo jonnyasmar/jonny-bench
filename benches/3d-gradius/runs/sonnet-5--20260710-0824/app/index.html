@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>RIFT RUNNER</title>
+<link rel="stylesheet" href="./style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-block score-block">
+        <div class="label">SCORE</div>
+        <div id="score" class="value">000000</div>
+      </div>
+      <div class="hud-block sector-block">
+        <div class="label">SECTOR</div>
+        <div id="sector" class="value">1</div>
+      </div>
+      <div class="hud-block lives-block">
+        <div class="label">SHIPS</div>
+        <div id="lives" class="value lives-icons"></div>
+      </div>
+    </div>
+
+    <div id="boss-health" class="hidden">
+      <div class="boss-name" id="boss-name">GUARDIAN</div>
+      <div class="boss-bar-outer"><div id="boss-bar" class="boss-bar-inner"></div></div>
+    </div>
+
+    <div class="hud-bottom">
+      <div id="power-meter">
+        <div class="power-slot" data-slot="SPEED"><span>SPEED</span></div>
+        <div class="power-slot" data-slot="MISSILE"><span>MISSILE</span></div>
+        <div class="power-slot" data-slot="DOUBLE"><span>DOUBLE</span></div>
+        <div class="power-slot" data-slot="LASER"><span>LASER</span></div>
+        <div class="power-slot" data-slot="OPTION"><span>OPTION</span></div>
+        <div class="power-slot" data-slot="SHIELD"><span>SHIELD</span></div>
+      </div>
+    </div>
+
+    <div id="wave-banner" class="hidden"></div>
+    <div id="combo-popup" class="hidden"></div>
+  </div>
+
+  <div id="start-screen" class="screen">
+    <div class="title-wrap">
+      <h1 class="game-title">RIFT RUNNER</h1>
+      <p class="subtitle">a descent through the crystal expanse</p>
+    </div>
+    <div class="panel">
+      <div class="controls-grid">
+        <div><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> / <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
+        <div><kbd>SPACE</kbd><span>Fire</span></div>
+        <div><kbd>E</kbd><span>Activate Power</span></div>
+        <div><kbd>P</kbd> / <kbd>ESC</kbd><span>Pause</span></div>
+      </div>
+      <p class="hint">Collect crystal capsules to advance the power meter, then press <b>E</b> to activate the highlighted upgrade.</p>
+      <button id="start-btn" class="glow-btn">LAUNCH</button>
+      <button id="sound-toggle" class="text-btn">SOUND: ON</button>
+    </div>
+  </div>
+
+  <div id="pause-screen" class="screen hidden">
+    <h2>PAUSED</h2>
+    <button id="resume-btn" class="glow-btn">RESUME</button>
+  </div>
+
+  <div id="gameover-screen" class="screen hidden">
+    <h2 class="gameover-title">SHIP LOST</h2>
+    <p>FINAL SCORE</p>
+    <div id="final-score" class="final-score">000000</div>
+    <p id="final-sector"></p>
+    <button id="restart-btn" class="glow-btn">RETRY</button>
+  </div>
+
+  <div id="loading-screen" class="screen">
+    <p class="loading-text">CALIBRATING RIFT DRIVE&hellip;</p>
+  </div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
