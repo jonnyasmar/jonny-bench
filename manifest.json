@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T11:28:49.447Z",
+  "generatedAt": "2026-07-10T12:21:36.206Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -9,6 +9,40 @@
       "capMinutes": 90,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "opus-4.8--20260710-0731",
+          "bench": "3d-gradius",
+          "model": "opus-4.8",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.206 (Claude Code)",
+          "startedAt": "2026-07-10T11:31:56.017Z",
+          "wallSeconds": 2969,
+          "totalTokens": 48928188,
+          "totalCostUsd": null,
+          "status": "failed",
+          "exitReason": "error",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-opus-4-8",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "703efc90-c409-4c5f-ba05-464faeb31386",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "Opus 4.8",
+          "vendor": "Anthropic",
+          "appPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/transcript.jsonl",
+          "screenshotPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/screenshot.png"
+        },
         {
           "runId": "gemini-3.1-pro--20260710-0655",
           "bench": "3d-gradius",
