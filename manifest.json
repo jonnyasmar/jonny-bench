@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T06:41:40.298Z",
+  "generatedAt": "2026-07-10T07:12:16.875Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -9,6 +9,40 @@
       "capMinutes": 30,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "fable-5--20260710-0242",
+          "bench": "3d-gradius",
+          "model": "fable-5",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.206 (Claude Code)",
+          "startedAt": "2026-07-10T06:42:16.075Z",
+          "wallSeconds": 1801,
+          "totalTokens": null,
+          "totalCostUsd": null,
+          "status": "failed",
+          "exitReason": "cap",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-fable-5",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "a51375d4-d7cb-461c-a00e-7ec88ac44a43",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "Fable 5",
+          "vendor": "Anthropic",
+          "appPath": "benches/3d-gradius/runs/fable-5--20260710-0242/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/fable-5--20260710-0242/transcript.jsonl",
+          "screenshotPath": null
+        },
         {
           "runId": "sonnet-5--20260710-0211",
           "bench": "3d-gradius",
