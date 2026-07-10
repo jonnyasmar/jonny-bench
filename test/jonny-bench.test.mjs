@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, extractUsage } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, extractUsage, mergeTranscriptFiles } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -570,6 +570,31 @@ test('root-absolute asset path detector flags src/href but not relative or proto
     { line: 2, match: 'href="/assets/index-abc123.css"' }
   ]);
   assert.equal(findings[0].file, 'index.html');
+});
+
+test('mergeTranscriptFiles interleaves JSONL sources by timestamp', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-merge-'));
+  const events = path.join(dir, 'events.jsonl');
+  const output = path.join(dir, 'cli-output.jsonl');
+  const merged = path.join(dir, 'transcript.jsonl');
+  await writeFile(events, [
+    JSON.stringify({ ts: '2026-07-10T00:00:02.000Z', type: 'tool_started', id: 'event-1' }),
+    JSON.stringify({ ts: '2026-07-10T00:00:04.000Z', type: 'tool_completed', id: 'event-2' })
+  ].join('\n') + '\n');
+  await writeFile(output, [
+    JSON.stringify({ ts: '2026-07-10T00:00:01.000Z', stream: 'stdout', text: 'first' }),
+    JSON.stringify({ ts: '2026-07-10T00:00:03.000Z', stream: 'stdout', text: 'second' })
+  ].join('\n') + '\n');
+
+  await mergeTranscriptFiles([events, output], merged);
+  const lines = (await readFile(merged, 'utf8')).trim().split('\n');
+  assert.equal(lines.length, 4);
+  assert.deepEqual(lines.map((line) => JSON.parse(line).ts), [
+    '2026-07-10T00:00:01.000Z',
+    '2026-07-10T00:00:02.000Z',
+    '2026-07-10T00:00:03.000Z',
+    '2026-07-10T00:00:04.000Z'
+  ]);
 });
 
 test('usage extraction supports claude, codex, and absent usage shapes', () => {

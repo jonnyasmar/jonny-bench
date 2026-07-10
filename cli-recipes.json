@@ -114,6 +114,13 @@
       "--verbatim"
     ],
     "transcriptGlob": "$RUN_HOME/.grok/sessions/**/events.jsonl",
+    "mergeTranscript": {
+      "sources": [
+        "$RUN_HOME/.grok/sessions/**/events.jsonl",
+        "$RUN_DIR/cli-output.jsonl"
+      ],
+      "out": "transcript.jsonl"
+    },
     "usageLogGlob": "$RUN_HOME/.grok/logs/unified.jsonl",
     "preCreateDirs": [
       "$RUN_HOME/.grok"

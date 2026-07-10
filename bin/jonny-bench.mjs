@@ -380,6 +380,21 @@ async function newestGlobMatch(pattern) {
   return files[0]?.file || null;
 }
 
+async function globMatches(pattern) {
+  const firstWildcard = pattern.search(/[*?]/);
+  const base = firstWildcard === -1
+    ? path.dirname(pattern)
+    : path.dirname(pattern.slice(0, firstWildcard));
+  if (!(await pathExists(base))) return [];
+  const regex = globToRegExp(pattern);
+  const files = [];
+  await walk(base, async (file, dirent) => {
+    if (dirent.isFile() && regex.test(file)) files.push(file);
+  });
+  files.sort();
+  return files;
+}
+
 function globToRegExp(glob) {
   let out = '^';
   for (let i = 0; i < glob.length; i += 1) {
@@ -502,6 +517,36 @@ function parseJsonLines(text) {
   return values;
 }
 
+function jsonLineTimestamp(line) {
+  try {
+    const parsed = JSON.parse(line);
+    const time = Date.parse(parsed.ts);
+    return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+export async function mergeTranscriptFiles(sourceFiles, outFile) {
+  const rows = [];
+  for (const [sourceIndex, file] of sourceFiles.entries()) {
+    const lines = (await readFile(file, 'utf8')).split(/\r?\n/);
+    for (const [lineIndex, line] of lines.entries()) {
+      if (!line.trim()) continue;
+      rows.push({
+        line,
+        ts: jsonLineTimestamp(line),
+        sourceIndex,
+        lineIndex
+      });
+    }
+  }
+  rows.sort((a, b) => a.ts - b.ts || a.sourceIndex - b.sourceIndex || a.lineIndex - b.lineIndex);
+  await mkdir(path.dirname(outFile), { recursive: true });
+  await writeFile(outFile, rows.length ? `${rows.map((row) => row.line).join('\n')}\n` : '');
+  return outFile;
+}
+
 function codexUsageTotal(usage) {
   if (!usage || typeof usage !== 'object') return 0;
   return (Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0)
@@ -586,6 +631,19 @@ export function extractUsage(cli, text) {
 }
 
 async function copyTranscript(recipe, vars, runDir) {
+  if (recipe.mergeTranscript) {
+    const sources = Array.isArray(recipe.mergeTranscript.sources) ? recipe.mergeTranscript.sources : [];
+    const sourceFiles = [];
+    for (const source of sources) sourceFiles.push(...await globMatches(substitute(source, vars)));
+    if (!sourceFiles.length) return null;
+    const out = recipe.mergeTranscript.out || 'transcript.jsonl';
+    const dest = path.resolve(runDir, out);
+    const root = path.resolve(runDir);
+    if (dest !== root && !dest.startsWith(`${root}${path.sep}`)) {
+      throw new Error(`mergeTranscript.out must resolve inside runDir: ${out}`);
+    }
+    return mergeTranscriptFiles(sourceFiles, dest);
+  }
   if (!recipe.transcriptGlob) return null;
   const match = await newestGlobMatch(substitute(recipe.transcriptGlob, vars));
   if (!match) return null;
