@@ -32,6 +32,10 @@ async function main() {
   process.stdout.write(`${JSON.stringify({ type: 'assistant', usage: { input_tokens: 2, output_tokens: 3 } })}\n`);
   process.stdout.write(`${JSON.stringify({ type: 'result', total_cost_usd: 0.12, usage: { input_tokens: 5, output_tokens: 7 } })}\n`);
   if (process.env.FAKE_STREAM_LEAK) process.stdout.write(`${process.env.FAKE_STREAM_LEAK}\n`);
+  if (process.env.FAKE_ARTIFACT_LEAK) {
+    const artifactPath = argv[argv.indexOf('--artifact') + 1];
+    await writeFile(artifactPath, `${process.env.FAKE_ARTIFACT_LEAK}\n`);
+  }
 
   if (mode === 'sleep') {
     await sleep(60_000);

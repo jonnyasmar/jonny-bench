@@ -26,6 +26,7 @@ async function makeRepo({
   seedTo = '$RUN_HOME/auth/seed.json',
   invalidSeedJson = false,
   streamLeak = null,
+  artifactLeak = null,
   appPathLeak = false,
   usePathResolvedBin = false
 } = {}) {
@@ -65,13 +66,14 @@ async function makeRepo({
     PROMPT_COPY: '$PROMPT'
   };
   if (streamLeak) fakeEnv.FAKE_STREAM_LEAK = streamLeak;
+  if (artifactLeak) fakeEnv.FAKE_ARTIFACT_LEAK = artifactLeak;
   if (appPathLeak) fakeEnv.FAKE_APP_PATH = '$HOME/private-project';
   const fakeRecipe = {
     bin: recipeBin,
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
-    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '$PROMPT'],
+    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '/goal $PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
     transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
     preCreateDirs: ['$RUN_HOME/.fake']
   };
@@ -200,7 +202,7 @@ test('leak scanner covers secrets, emails, truncation, and home paths', () => {
 });
 
 test('fake CLI receives exact env, substituted argv, copied creds, and publishes artifact metadata', async () => {
-  const { root, env } = await makeRepo();
+  const { root, env, home } = await makeRepo();
   const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
   assert.equal(result.status, 0, result.stderr);
 
@@ -226,8 +228,13 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(record.argv[2], '--session');
   assert.match(record.argv[3], /^[0-9a-f-]{36}$/);
   assert.equal(record.argv[4], '--prompt');
-  assert.equal(record.argv[5], 'Build a tiny app.\nKeep this prompt as one argv element.\n');
-  assert.equal(record.env.PROMPT_COPY, record.argv[5]);
+  assert.equal(record.argv[5], '/goal Build a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.argv[6], '--artifact');
+  assert.ok(path.isAbsolute(record.argv[7]));
+  assert.equal(record.argv[8], '--home-template');
+  assert.ok(path.isAbsolute(record.argv[9]));
+  assert.equal(record.argv.length, 10);
+  assert.equal(record.env.PROMPT_COPY, 'Build a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.env.CUSTOM_ENV, `model=fake-model-arg session=${record.argv[3]}`);
 
   assert.ok(record.cred.path.startsWith(record.env.HOME));
@@ -244,12 +251,18 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(meta.cli, 'fake');
   assert.equal(meta.totalTokens, null);
   assert.equal(meta.totalCostUsd, null);
+  assert.deepEqual(meta.argv, [fakeCli, '--model', 'fake-model-arg', '--session', record.argv[3], '--prompt', '[prompt]', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json']);
+  assert.equal(path.isAbsolute(meta.argv[7]), false);
+  assert.equal(meta.argv[7].includes(root), false);
+  assert.equal(path.isAbsolute(meta.argv[9]), false);
+  assert.equal(meta.argv[9].includes(home), false);
 
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
   assert.equal(manifest.goals[0].runs[0].appPath.endsWith('/app/index.html'), true);
   assert.equal(manifest.goals[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
   assert.equal(manifest.goals[0].runs[0].displayName, 'fake-model');
   assert.equal(manifest.goals[0].runs[0].vendor, 'Test');
+  assert.deepEqual(manifest.goals[0].runs[0].argv, meta.argv);
 });
 
 test('child PATH is minimal and recipe bin is resolved before spawn', async () => {
@@ -273,6 +286,17 @@ test('leak gate blocks secret streams without committing', async () => {
   assert.equal(count, '1');
 });
 
+test('leak gate scans extra text artifacts under the run dir before committing', async () => {
+  const secret = 'sk-ant-abcdefghijklmnopqrstuvwxyz';
+  const { root, env } = await makeRepo({ artifactLeak: secret });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /raw-output\.txt:1 anthropic-api-key/);
+  assert.doesNotMatch(result.stderr, new RegExp(secret));
+  const count = execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  assert.equal(count, '1');
+});
+
 test('leak gate redacts real-home paths and records redaction count', async () => {
   const { root, env, home } = await makeRepo({ appPathLeak: true });
   const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
@@ -280,6 +304,7 @@ test('leak gate redacts real-home paths and records redaction count', async () =
   const runDir = await findRunDir(root);
   const app = await readFile(path.join(runDir, 'app', 'index.html'), 'utf8');
   assert.equal(app.includes(home), false);
+  assert.equal(app.includes('private-project'), false);
   assert.equal(app.includes('/Users/redacted'), true);
   const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
   assert.ok(meta.redactions >= 1);

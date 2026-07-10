@@ -11,6 +11,8 @@ Results viewer: https://getatrium.dev/bench
 - No repo hooks, MCPs, `AGENTS.md`, or preloaded skills.
 - The CLI is run as shipped, through the recipe in `cli-recipes.json`.
 - One prompt, zero follow-ups.
+- Claude Code runs launch through its built-in `/goal` command so the agent loops until it judges the goal met; Codex has no equivalent and runs as a single-shot `exec`.
+- Each run records the exact harness argv in `meta.json`, with the prompt-bearing element elided as `[prompt]`.
 - Auto-approve is enabled where the CLI supports it.
 - Network is on.
 - Each run has a wall-clock cap from the goal spec.

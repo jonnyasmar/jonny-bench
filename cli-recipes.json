@@ -44,7 +44,7 @@
       "--dangerously-skip-permissions",
       "--session-id",
       "$SESSION_ID",
-      "$PROMPT"
+      "/goal $PROMPT"
     ],
     "transcriptGlob": "$RUN_HOME/.claude/projects/*/$SESSION_ID.jsonl",
     "preCreateDirs": [],

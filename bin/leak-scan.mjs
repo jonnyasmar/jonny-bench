@@ -128,7 +128,7 @@ export function redactText(text, options = {}) {
   let output = String(text);
   let redactions = 0;
   for (const value of [realHome, user ? `/home/${user}` : null].filter(Boolean)) {
-    const regex = new RegExp(escapeRegExp(value), 'g');
+    const regex = new RegExp(`${escapeRegExp(value)}(?:/[A-Za-z0-9._\\-/]*)?`, 'g');
     output = output.replace(regex, () => {
       redactions += 1;
       return REDACTED_HOME;

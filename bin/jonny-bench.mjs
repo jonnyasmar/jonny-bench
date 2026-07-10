@@ -120,6 +120,19 @@ function substitute(value, vars) {
   });
 }
 
+function buildSpawnArgv(recipeArgv = [], vars) {
+  return recipeArgv.map((arg) => substitute(arg, vars));
+}
+
+function redactedSpawnArgv(recipeArgv = [], argv = []) {
+  return recipeArgv.map((arg, index) => {
+    const template = String(arg);
+    if (template.includes('$PROMPT')) return '[prompt]';
+    if (/\$(?:RUN_DIR|RUN_HOME|WORKDIR|HOME|USER)\b/.test(template)) return template;
+    return String(argv[index]);
+  });
+}
+
 function minimalChildPath(resolvedBin) {
   const parts = [...BASE_CHILD_PATH, path.dirname(resolvedBin), path.dirname(process.execPath)];
   return [...new Set(parts.filter(Boolean))].join(path.delimiter);
@@ -577,6 +590,7 @@ async function writeDryRun(goal, modelSlug, model, runId, runDir, options) {
     totalCostUsd: 0,
     status: 'ok',
     exitReason: 'completed',
+    argv: [],
     dryRun: true
   };
   await writeMetaAfterLeakGate(runDir, meta, options);
@@ -631,7 +645,9 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
 
     const env = buildChildEnv(recipe.env, vars, preflightInfo.childPath);
     const cliVersion = await runVersion(recipe, preflightInfo.binPath, env, workdir);
-    const argv = (recipe.argv || []).map((arg) => substitute(arg, vars));
+    const recipeArgv = recipe.argv || [];
+    const argv = buildSpawnArgv(recipeArgv, vars);
+    const metaArgv = redactedSpawnArgv(recipeArgv, argv);
     const startedAt = new Date().toISOString();
     const result = await runStreaming(preflightInfo.binPath, argv, {
       cwd: workdir,
@@ -675,7 +691,8 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
       totalTokens: usage.totalTokens,
       totalCostUsd: usage.totalCostUsd,
       status,
-      exitReason
+      exitReason,
+      argv: metaArgv
     };
     const redactionState = await redactRunArtifacts(runDir);
     if (!options.noScreenshot && status === 'ok') {
@@ -731,16 +748,9 @@ class LeakGateError extends Error {
 
 async function collectRunTextArtifacts(runDir) {
   const files = [];
-  for (const name of ['transcript.jsonl', 'transcript.txt', 'cli-output.jsonl', 'last-message.txt']) {
-    const file = path.join(runDir, name);
-    if (await pathExists(file)) files.push(file);
-  }
-  const appDir = path.join(runDir, 'app');
-  if (await pathExists(appDir)) {
-    await walk(appDir, async (file, dirent) => {
-      if (dirent.isFile() && await isTextFile(file)) files.push(file);
-    });
-  }
+  await walk(runDir, async (file, dirent) => {
+    if (dirent.isFile() && await isTextFile(file)) files.push(file);
+  });
   return files;
 }
 
@@ -967,6 +977,9 @@ export async function validateManifest(manifest = null) {
       if (!Number.isFinite(run.wallSeconds)) errors.push(`${runPrefix}.wallSeconds must be number`);
       if (run.totalTokens !== null && !Number.isFinite(run.totalTokens)) errors.push(`${runPrefix}.totalTokens must be number|null`);
       if (run.totalCostUsd !== null && !Number.isFinite(run.totalCostUsd)) errors.push(`${runPrefix}.totalCostUsd must be number|null`);
+      if (run.argv !== undefined && (!Array.isArray(run.argv) || run.argv.some((arg) => typeof arg !== 'string'))) {
+        errors.push(`${runPrefix}.argv must be an optional array of strings`);
+      }
       for (const [key, required] of [['appPath', run.status === 'ok'], ['transcriptPath', true], ['screenshotPath', false]]) {
         const value = run[key];
         if (value === null) {
