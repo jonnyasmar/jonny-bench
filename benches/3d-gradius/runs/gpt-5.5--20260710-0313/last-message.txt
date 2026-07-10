@@ -1,0 +1,13 @@
+Implemented the static Three.js game in [index.html](/private/var/folders/_l/4gzjzznn2z73r8kldgtyxsmw0000gn/T/jonny-bench-work-ww62IC/index.html:1), with Three.js vendored locally at [vendor/three.module.min.js](/private/var/folders/_l/4gzjzznn2z73r8kldgtyxsmw0000gn/T/jonny-bench-work-ww62IC/vendor/three.module.min.js:1).
+
+It’s running at:
+
+`http://localhost:4173/`
+
+Controls: WASD/arrows to move, Space to fire, Shift for precision, P to pause, pointer/touch drag also works.
+
+Verification done:
+- Static server returns `200 OK` for `index.html` and the vendored Three.js module.
+- JavaScript module syntax check passes.
+- Confirmed required Three exports exist locally.
+- Attempted Playwright visual smoke test, but Chromium cannot launch in this macOS sandbox due a Mach port permission denial.
