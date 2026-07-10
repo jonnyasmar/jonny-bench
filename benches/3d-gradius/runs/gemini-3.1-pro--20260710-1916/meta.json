@@ -1,0 +1,34 @@
+{
+  "runId": "gemini-3.1-pro--20260710-1916",
+  "bench": "3d-gradius",
+  "model": "gemini-3.1-pro",
+  "effort": "high",
+  "cli": "antigravity",
+  "cliVersion": "1.1.1",
+  "startedAt": "2026-07-10T23:16:09.407Z",
+  "wallSeconds": 2548,
+  "rootAbsolutePaths": [],
+  "totalTokens": 452411,
+  "totalCostUsd": null,
+  "estimatedCostUsd": 1.0415,
+  "usage": {
+    "inputTokens": 438746,
+    "cachedInputTokens": 353031,
+    "outputTokens": 13665
+  },
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "--model",
+    "Gemini 3.1 Pro (High)",
+    "--dangerously-skip-permissions",
+    "--new-project",
+    "--print-timeout",
+    "88m"
+  ],
+  "appPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-1916/app/index.html",
+  "screenshotPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-1916/screenshot.png",
+  "redactions": 0
+}
