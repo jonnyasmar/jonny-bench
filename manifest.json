@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T20:03:36.127Z",
+  "generatedAt": "2026-07-10T20:09:51.648Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -45,6 +45,7 @@
           "displayName": "Gemini 3.1 Pro",
           "vendor": "Google",
           "flagship": true,
+          "rank": 1,
           "transcriptPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0938/cli-output.jsonl"
         },
         {
@@ -81,6 +82,7 @@
           "displayName": "Fable 5",
           "vendor": "Anthropic",
           "flagship": true,
+          "rank": 1,
           "transcriptPath": "benches/3d-gradius/runs/fable-5--20260710-0913/transcript.jsonl"
         },
         {
@@ -114,6 +116,7 @@
           "redactions": 0,
           "displayName": "Sonnet 5",
           "vendor": "Anthropic",
+          "rank": 3,
           "appPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/sonnet-5--20260710-0824/screenshot.png"
@@ -149,6 +152,7 @@
           "redactions": 0,
           "displayName": "Opus 4.8",
           "vendor": "Anthropic",
+          "rank": 2,
           "appPath": null,
           "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0818/transcript.jsonl",
           "screenshotPath": null
@@ -185,6 +189,7 @@
           "redactions": 0,
           "displayName": "Opus 4.8",
           "vendor": "Anthropic",
+          "rank": 2,
           "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/transcript.jsonl"
         },
         {
@@ -214,6 +219,7 @@
           "displayName": "Gemini 3.1 Pro",
           "vendor": "Google",
           "flagship": true,
+          "rank": 1,
           "appPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/cli-output.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gemini-3.1-pro--20260710-0655/screenshot.png"
@@ -247,6 +253,7 @@
           "displayName": "Grok 4.5",
           "vendor": "xAI",
           "flagship": true,
+          "rank": 1,
           "appPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/screenshot.png"
@@ -287,6 +294,7 @@
           "redactions": 0,
           "displayName": "GPT-5.6 Terra",
           "vendor": "OpenAI",
+          "rank": 2,
           "appPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gpt-5.6-terra--20260710-0330/screenshot.png"
@@ -328,6 +336,7 @@
           "displayName": "GPT-5.6 Sol",
           "vendor": "OpenAI",
           "flagship": true,
+          "rank": 1,
           "appPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gpt-5.6-sol--20260710-0323/screenshot.png"
@@ -368,6 +377,7 @@
           "redactions": 0,
           "displayName": "GPT-5.5",
           "vendor": "OpenAI",
+          "rank": 3,
           "appPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/screenshot.png"
@@ -403,6 +413,7 @@
           "displayName": "Fable 5",
           "vendor": "Anthropic",
           "flagship": true,
+          "rank": 1,
           "appPath": "benches/3d-gradius/runs/fable-5--20260710-0242/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/fable-5--20260710-0242/transcript.jsonl",
           "screenshotPath": null
@@ -437,6 +448,7 @@
           "redactions": 128,
           "displayName": "Sonnet 5",
           "vendor": "Anthropic",
+          "rank": 3,
           "appPath": "benches/3d-gradius/runs/sonnet-5--20260710-0211/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/sonnet-5--20260710-0211/transcript.jsonl",
           "screenshotPath": null
@@ -471,6 +483,7 @@
           "redactions": 0,
           "displayName": "Opus 4.8",
           "vendor": "Anthropic",
+          "rank": 2,
           "appPath": "benches/3d-gradius/runs/opus-4.8--20260710-0141/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0141/transcript.jsonl",
           "screenshotPath": null

@@ -1,10 +1,10 @@
 {
-  "opus-4.8": { "displayName": "Opus 4.8", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-opus-4-8", "effort": "high" },
-  "sonnet-5": { "displayName": "Sonnet 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-sonnet-5", "effort": "high" },
-  "fable-5": { "displayName": "Fable 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-fable-5", "effort": "high", "flagship": true },
-  "gpt-5.5": { "displayName": "GPT-5.5", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.5", "effort": "high" },
-  "gpt-5.6-sol": { "displayName": "GPT-5.6 Sol", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-sol", "effort": "high", "flagship": true },
-  "gpt-5.6-terra": { "displayName": "GPT-5.6 Terra", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-terra", "effort": "high" },
-  "grok-4.5": { "displayName": "Grok 4.5", "vendor": "xAI", "cli": "grok", "modelArg": "grok-4.5", "effort": "high", "flagship": true },
-  "gemini-3.1-pro": { "displayName": "Gemini 3.1 Pro", "vendor": "Google", "cli": "antigravity", "modelArg": "Gemini 3.1 Pro (High)", "flagship": true }
+  "opus-4.8": { "displayName": "Opus 4.8", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-opus-4-8", "effort": "high", "rank": 2 },
+  "sonnet-5": { "displayName": "Sonnet 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-sonnet-5", "effort": "high", "rank": 3 },
+  "fable-5": { "displayName": "Fable 5", "vendor": "Anthropic", "cli": "claude-code", "modelArg": "claude-fable-5", "effort": "high", "flagship": true, "rank": 1 },
+  "gpt-5.5": { "displayName": "GPT-5.5", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.5", "effort": "high", "rank": 3 },
+  "gpt-5.6-sol": { "displayName": "GPT-5.6 Sol", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-sol", "effort": "high", "flagship": true, "rank": 1 },
+  "gpt-5.6-terra": { "displayName": "GPT-5.6 Terra", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-terra", "effort": "high", "rank": 2 },
+  "grok-4.5": { "displayName": "Grok 4.5", "vendor": "xAI", "cli": "grok", "modelArg": "grok-4.5", "effort": "high", "flagship": true, "rank": 1 },
+  "gemini-3.1-pro": { "displayName": "Gemini 3.1 Pro", "vendor": "Google", "cli": "antigravity", "modelArg": "Gemini 3.1 Pro (High)", "flagship": true, "rank": 1 }
 }

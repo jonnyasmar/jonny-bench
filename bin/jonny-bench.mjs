@@ -1034,7 +1034,8 @@ export async function regenerateManifest() {
             ? {
                 displayName: modelInfo.displayName,
                 vendor: modelInfo.vendor,
-                ...(typeof modelInfo.flagship === 'boolean' ? { flagship: modelInfo.flagship } : {})
+                ...(typeof modelInfo.flagship === 'boolean' ? { flagship: modelInfo.flagship } : {}),
+                ...(Number.isInteger(modelInfo.rank) ? { rank: modelInfo.rank } : {})
               }
             : {}),
           appPath: await pathExists(appIndex) ? `${relRun}/app/index.html` : null,
@@ -1098,6 +1099,9 @@ export async function validateManifest(manifest = null) {
       }
       if (run.flagship !== undefined && typeof run.flagship !== 'boolean') {
         errors.push(`${runPrefix}.flagship must be an optional boolean`);
+      }
+      if (run.rank !== undefined && !Number.isInteger(run.rank)) {
+        errors.push(`${runPrefix}.rank must be an optional integer`);
       }
       if (run.argv !== undefined && (!Array.isArray(run.argv) || run.argv.some((arg) => typeof arg !== 'string'))) {
         errors.push(`${runPrefix}.argv must be an optional array of strings`);
