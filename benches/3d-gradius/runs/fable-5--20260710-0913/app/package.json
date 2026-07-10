@@ -1,0 +1,22 @@
+{
+  "name": "ion-tempest",
+  "version": "1.0.0",
+  "description": "ION TEMPEST — a neon 3D side-scrolling shooter built with Three.js",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=iife --outfile=assets/game.js",
+    "test": "node test/smoke.mjs && node test/deep.mjs",
+    "dev": "esbuild src/main.js --bundle --format=iife --outfile=assets/game.js --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.23.0",
+    "three": "^0.166.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  },
+  "private": true
+}

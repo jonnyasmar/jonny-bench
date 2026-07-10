@@ -1,0 +1,32 @@
+{
+  "runId": "fable-5--20260710-0913",
+  "bench": "3d-gradius",
+  "model": "fable-5",
+  "effort": "high",
+  "cli": "claude-code",
+  "cliVersion": "2.1.206 (Claude Code)",
+  "startedAt": "2026-07-10T13:13:10.101Z",
+  "wallSeconds": 1473,
+  "rootAbsolutePaths": [],
+  "totalTokens": 3349339,
+  "totalCostUsd": 9.384352000000002,
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "--model",
+    "claude-fable-5",
+    "--effort",
+    "high",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+    "--session-id",
+    "fadac0fe-4040-4ac0-90e8-a07dac82799e",
+    "[prompt]"
+  ],
+  "appPath": "benches/3d-gradius/runs/fable-5--20260710-0913/app/index.html",
+  "screenshotPath": "benches/3d-gradius/runs/fable-5--20260710-0913/screenshot.png",
+  "redactions": 0
+}
