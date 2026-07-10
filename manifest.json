@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T07:33:31.237Z",
+  "generatedAt": "2026-07-10T07:39:27.495Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -9,6 +9,38 @@
       "capMinutes": 30,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "grok-4.5--20260710-0333",
+          "bench": "3d-gradius",
+          "model": "grok-4.5",
+          "effort": "high",
+          "cli": "grok",
+          "cliVersion": "grok 0.2.93 (f00f96316d4b)",
+          "startedAt": "2026-07-10T07:33:32.873Z",
+          "wallSeconds": 352,
+          "totalTokens": null,
+          "totalCostUsd": null,
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "[prompt]",
+            "--model",
+            "grok-4.5",
+            "--reasoning-effort",
+            "high",
+            "--always-approve",
+            "--output-format",
+            "streaming-json",
+            "--verbatim"
+          ],
+          "redactions": 0,
+          "displayName": "Grok 4.5",
+          "vendor": "xAI",
+          "appPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/transcript.jsonl",
+          "screenshotPath": "benches/3d-gradius/runs/grok-4.5--20260710-0333/screenshot.png"
+        },
         {
           "runId": "gpt-5.6-terra--20260710-0330",
           "bench": "3d-gradius",

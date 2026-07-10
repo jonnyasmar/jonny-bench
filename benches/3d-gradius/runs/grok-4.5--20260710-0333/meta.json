@@ -1,0 +1,27 @@
+{
+  "runId": "grok-4.5--20260710-0333",
+  "bench": "3d-gradius",
+  "model": "grok-4.5",
+  "effort": "high",
+  "cli": "grok",
+  "cliVersion": "grok 0.2.93 (f00f96316d4b)",
+  "startedAt": "2026-07-10T07:33:32.873Z",
+  "wallSeconds": 352,
+  "totalTokens": null,
+  "totalCostUsd": null,
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "--model",
+    "grok-4.5",
+    "--reasoning-effort",
+    "high",
+    "--always-approve",
+    "--output-format",
+    "streaming-json",
+    "--verbatim"
+  ],
+  "redactions": 0
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AETHER WING — Void Runner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="hud-block score-block">
+          <span class="label">SCORE</span>
+          <span id="score" class="value">0</span>
+        </div>
+        <div class="hud-block wave-block">
+          <span class="label">SECTOR</span>
+          <span id="wave" class="value">1</span>
+        </div>
+        <div class="hud-block lives-block">
+          <span class="label">HULL</span>
+          <div id="lives" class="lives-pips"></div>
+        </div>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="power-bar-wrap">
+          <span class="label">POWER</span>
+          <div id="power-bar" class="power-bar">
+            <div class="power-slot" data-slot="0"><span>SPD</span></div>
+            <div class="power-slot" data-slot="1"><span>MSL</span></div>
+            <div class="power-slot" data-slot="2"><span>DBL</span></div>
+            <div class="power-slot" data-slot="3"><span>LAS</span></div>
+            <div class="power-slot" data-slot="4"><span>OPT</span></div>
+            <div class="power-slot" data-slot="5"><span>SHD</span></div>
+          </div>
+          <div class="power-hint">CAPS collect → <kbd>SHIFT</kbd> activate</div>
+        </div>
+        <div class="weapon-status">
+          <span id="weapon-label">PULSE</span>
+          <span id="shield-indicator" class="hidden">◈ SHIELD</span>
+        </div>
+      </div>
+
+      <div id="boss-hud" class="boss-hud hidden">
+        <span class="boss-name" id="boss-name">VOID SERAPH</span>
+        <div class="boss-bar-track">
+          <div id="boss-bar" class="boss-bar-fill"></div>
+        </div>
+      </div>
+
+      <div id="combo-display" class="combo-display hidden">
+        <span id="combo-count">x2</span>
+        <span class="combo-label">COMBO</span>
+      </div>
+
+      <div id="announcer" class="announcer"></div>
+    </div>
+
+    <!-- Title Screen -->
+    <div id="title-screen" class="screen">
+      <div class="title-bg-grid"></div>
+      <div class="title-content">
+        <p class="title-eyebrow">NEBULA DEFENSE INITIATIVE</p>
+        <h1 class="title-logo">AETHER<span>WING</span></h1>
+        <p class="title-tagline">Pierce the void. Claim the light.</p>
+        <button id="btn-start" class="btn primary pulse">ENGAGE</button>
+        <div class="controls-card">
+          <div class="ctrl-row"><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> Move</div>
+          <div class="ctrl-row"><kbd>SPACE</kbd> / <kbd>Z</kbd> Fire</div>
+          <div class="ctrl-row"><kbd>SHIFT</kbd> / <kbd>X</kbd> Activate Power</div>
+          <div class="ctrl-row"><kbd>P</kbd> Pause · <kbd>M</kbd> Mute</div>
+        </div>
+      </div>
+      <p class="credit">Three.js · Original Void Runner</p>
+    </div>
+
+    <!-- Pause -->
+    <div id="pause-screen" class="screen hidden">
+      <div class="panel">
+        <h2>SUSPENDED</h2>
+        <p>Press <kbd>P</kbd> or <kbd>ESC</kbd> to resume</p>
+        <button id="btn-resume" class="btn primary">RESUME</button>
+        <button id="btn-quit" class="btn ghost">ABORT MISSION</button>
+      </div>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameover-screen" class="screen hidden">
+      <div class="panel">
+        <h2 id="go-title">HULL BREACHED</h2>
+        <p class="go-score-label">FINAL SCORE</p>
+        <p id="go-score" class="go-score">0</p>
+        <p id="go-stats" class="go-stats"></p>
+        <button id="btn-retry" class="btn primary">REDEPLOY</button>
+        <button id="btn-menu" class="btn ghost">MAIN MENU</button>
+      </div>
+    </div>
+
+    <!-- Flash / vignette overlays -->
+    <div id="damage-flash"></div>
+    <div id="vignette"></div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
