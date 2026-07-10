@@ -1,19 +1,11 @@
 {
-  "generatedAt": "2026-07-10T04:33:09.193Z",
+  "generatedAt": "2026-07-10T05:31:37.711Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
-      "slug": "flappy",
-      "title": "Flappy Bird clone",
-      "prompt": "Build a polished, playable Flappy Bird–style game as a static web app.\n\nRequirements:\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Controls: spacebar AND click/tap to flap.\n- Score, best score (persisted), game-over and restart flow.\n- Your own original visual style — do not copy Flappy Bird's art.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.\n",
-      "capMinutes": 30,
-      "suggestedBy": null,
-      "runs": []
-    },
-    {
-      "slug": "synth",
-      "title": "Playable web synthesizer",
-      "prompt": "Build a playable polyphonic synthesizer as a static web app.\n\nRequirements:\n- Pure client-side using the Web Audio API — no audio sample files. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- On-screen piano keyboard, at least 2 octaves, playable by mouse/touch AND the computer keyboard.\n- At least 2 oscillator waveforms, ADSR envelope controls, a filter with cutoff + resonance, and a delay or reverb effect.\n- Make it look and feel like an instrument you'd actually want to play.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.\n",
+      "slug": "3d-gradius",
+      "title": "Playable 3D Gradius built with Three.js",
+      "prompt": "\nBuild a polished, playable 3D Gradius game built with Three.js.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Your own original visual style — do not copy Gradius exactly.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.",
       "capMinutes": 30,
       "suggestedBy": null,
       "runs": []
