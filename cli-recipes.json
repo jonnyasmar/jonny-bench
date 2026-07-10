@@ -1,5 +1,5 @@
 {
-  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $EFFORT=reasoning effort from models.json or null, $CAP_MINUTES=bench.capMinutes minus a 2-minute buffer, formatted like \"28m\" (for CLIs with their own internal wait timeout shorter than our wall-clock cap), $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. If an argv element references $EFFORT and the model has no effort, that element and its preceding flag element are omitted. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $EFFORT=reasoning effort from models.json or null, $CAP_MINUTES=bench.capMinutes minus a 2-minute buffer, formatted like \"28m\" (for CLIs with their own internal wait timeout shorter than our wall-clock cap), $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. If an argv element references $EFFORT or $CAP_MINUTES and that variable is null, that element and its preceding flag element are omitted. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
   "claude-code": {
     "bin": "claude",
     "versionArgv": [
@@ -117,9 +117,9 @@
     "preCreateDirs": [
       "$RUN_HOME/.grok"
     ],
-    "usage": "No stable total-usage event was verified from the Grok streaming-json probe in this environment; extraction records totalTokens and totalCostUsd as null until a real output shape is proven. reasoning effort is pinned with --reasoning-effort $EFFORT."
+    "usage": "No stable total-usage event exists in the inspected real 3d-gradius grok-4.5 run: cli-output.jsonl contains streaming thought/text/end events, and transcript.jsonl contains lifecycle/tool events without token or cost totals. extraction records totalTokens and totalCostUsd as null until a real output shape is proven. reasoning effort is pinned with --reasoning-effort $EFFORT."
   },
-  "agy": {
+  "antigravity": {
     "bin": "agy",
     "versionArgv": [
       "--version"

@@ -127,12 +127,17 @@ function substitute(value, vars) {
   });
 }
 
-function referencesEffort(value) {
-  return /\$EFFORT\b/.test(String(value));
+function referencesOptionalArgVar(value) {
+  return /\$(?:EFFORT|CAP_MINUTES)\b/.test(String(value));
 }
 
-function hasEffort(vars) {
-  return typeof vars.EFFORT === 'string' && vars.EFFORT.length > 0;
+function hasOptionalArgVars(value, vars) {
+  const matches = String(value).matchAll(/\$(EFFORT|CAP_MINUTES)\b/g);
+  for (const match of matches) {
+    const candidate = vars[match[1]];
+    if (typeof candidate !== 'string' || candidate.length === 0) return false;
+  }
+  return true;
 }
 
 function shouldDropPreviousFlag(recipeArgv, index) {
@@ -142,12 +147,12 @@ function shouldDropPreviousFlag(recipeArgv, index) {
   return previous.startsWith('-') && !previous.includes('=') && !current.startsWith('-');
 }
 
-function buildSpawnArgvWithMeta(recipeArgv = [], vars) {
+export function buildSpawnArgvWithMeta(recipeArgv = [], vars) {
   const argv = [];
   const metaArgv = [];
   for (let index = 0; index < recipeArgv.length; index += 1) {
     const template = String(recipeArgv[index]);
-    if (referencesEffort(template) && !hasEffort(vars)) {
+    if (referencesOptionalArgVar(template) && !hasOptionalArgVars(template, vars)) {
       if (shouldDropPreviousFlag(recipeArgv, index)) {
         argv.pop();
         metaArgv.pop();

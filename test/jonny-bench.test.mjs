@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { extractUsage } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, extractUsage } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -29,7 +29,8 @@ async function makeRepo({
   artifactLeak = null,
   appPathLeak = false,
   usePathResolvedBin = false,
-  modelEffort = 'high'
+  modelEffort = 'high',
+  includeCapTimeout = false
 } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
   const home = path.join(root, 'real-home');
@@ -77,7 +78,24 @@ async function makeRepo({
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
-    argv: [fakeCli, '--model', '$MODEL_ARG', '--effort', '$EFFORT', '--config', 'effort=$EFFORT', '--session', '$SESSION_ID', '--prompt', '$PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
+    argv: [
+      fakeCli,
+      ...(includeCapTimeout ? ['--timeout', '$CAP_MINUTES'] : []),
+      '--model',
+      '$MODEL_ARG',
+      '--effort',
+      '$EFFORT',
+      '--config',
+      'effort=$EFFORT',
+      '--session',
+      '$SESSION_ID',
+      '--prompt',
+      '$PROMPT',
+      '--artifact',
+      '$RUN_DIR/raw-output.txt',
+      '--home-template',
+      '$HOME/profile.json'
+    ],
     transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
     preCreateDirs: ['$RUN_HOME/.fake']
   };
@@ -295,6 +313,36 @@ test('EFFORT substitution records effort and omits flag pairs when effort is nul
   assert.equal(meta.argv.includes('--effort'), false);
   assert.equal(meta.argv.includes('--config'), false);
   assert.equal(meta.argv.some((arg) => arg.includes('effort=')), false);
+});
+
+test('CAP_MINUTES substitutes as Nm and omits its flag pair when null', () => {
+  const recipeArgv = ['--print-timeout', '$CAP_MINUTES', '--model', '$MODEL_ARG'];
+  assert.deepEqual(
+    buildSpawnArgvWithMeta(recipeArgv, { CAP_MINUTES: '88m', MODEL_ARG: 'model-a' }),
+    {
+      argv: ['--print-timeout', '88m', '--model', 'model-a'],
+      metaArgv: ['--print-timeout', '88m', '--model', 'model-a']
+    }
+  );
+  assert.deepEqual(
+    buildSpawnArgvWithMeta(recipeArgv, { CAP_MINUTES: null, MODEL_ARG: 'model-a' }),
+    {
+      argv: ['--model', 'model-a'],
+      metaArgv: ['--model', 'model-a']
+    }
+  );
+});
+
+test('CAP_MINUTES is computed from bench cap minus two minutes', async () => {
+  const { root, env } = await makeRepo({ capMinutes: 30, includeCapTimeout: true });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+  const runDir = await findRunDir(root);
+  const record = JSON.parse(await readFile(path.join(runDir, 'fake-record.json'), 'utf8'));
+  assert.equal(record.argv[0], '--timeout');
+  assert.equal(record.argv[1], '28m');
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.deepEqual(meta.argv.slice(1, 3), ['--timeout', '28m']);
 });
 
 test('child PATH is minimal and recipe bin is resolved before spawn', async () => {
