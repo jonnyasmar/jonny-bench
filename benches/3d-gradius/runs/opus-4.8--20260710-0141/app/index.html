@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#05030f" />
+<title>NEON VANGUARD — a Gradius-style shooter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2305030f'/%3E%3Cpath d='M4 16 L22 8 L18 16 L22 24 Z' fill='%2339f6ff'/%3E%3Ccircle cx='26' cy='16' r='2' fill='%23ff2d95'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --cyan:#39f6ff; --mag:#ff2d95; --amber:#ffb020; --green:#8bff00;
+    --ink:#e8f6ff;
+    --glow-cyan:0 0 6px #39f6ff,0 0 14px #39f6ff88;
+    --glow-mag:0 0 6px #ff2d95,0 0 16px #ff2d9588;
+    font-family: "SF Mono", "Consolas", ui-monospace, "Menlo", monospace;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ width:100%; height:100%; overflow:hidden; background:#05030f; }
+  body{ background:radial-gradient(120% 90% at 50% 0%, #0d0a24 0%, #05030f 60%, #02010a 100%); }
+
+  #game{ position:fixed; inset:0; }
+  #game canvas{ display:block; width:100%; height:100%; }
+
+  #ui{ position:fixed; inset:0; pointer-events:none; user-select:none;
+       color:var(--ink); text-transform:uppercase; letter-spacing:.08em; }
+
+  /* ---------- Top HUD ---------- */
+  #hud{ position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between;
+        align-items:flex-start; padding:14px 20px; gap:16px; font-size:14px; }
+  .hud-block{ display:flex; flex-direction:column; gap:2px; }
+  .hud-label{ font-size:10px; opacity:.6; letter-spacing:.2em; }
+  .hud-val{ font-size:20px; font-weight:700; color:var(--cyan); text-shadow:var(--glow-cyan); font-variant-numeric:tabular-nums; }
+  #hi .hud-val{ color:var(--mag); text-shadow:var(--glow-mag); }
+  #stagebox .hud-val{ color:#fff; text-shadow:0 0 8px #fff8; }
+  #lives{ display:flex; gap:6px; margin-top:3px; }
+  .life{ width:16px; height:11px; background:linear-gradient(90deg,var(--cyan),#fff);
+         clip-path:polygon(0 50%,60% 0,100% 30%,100% 70%,60% 100%); box-shadow:var(--glow-cyan); }
+
+  /* ---------- Power meter ---------- */
+  #meter{ position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
+          display:flex; gap:6px; padding:6px; }
+  .slot{ position:relative; min-width:74px; padding:6px 8px 5px; text-align:center;
+         border:1px solid #2a3355; border-radius:4px; background:#0a0e22aa;
+         color:#7f8bb5; font-size:11px; font-weight:700; transition:all .12s; backdrop-filter:blur(3px); }
+  .slot .idx{ display:block; font-size:8px; opacity:.5; }
+  .slot.owned{ color:var(--cyan); border-color:#2f5a66; }
+  .slot.owned .lbl{ text-shadow:0 0 6px #39f6ff88; }
+  .slot.sel{ color:#05030f; background:var(--amber); border-color:#fff;
+             box-shadow:0 0 12px var(--amber),0 0 26px #ffb02066; transform:translateY(-4px) scale(1.06);
+             animation:selpulse .5s infinite alternate; }
+  @keyframes selpulse{ from{ box-shadow:0 0 10px var(--amber),0 0 20px #ffb02055; } to{ box-shadow:0 0 18px #fff,0 0 34px var(--amber); } }
+
+  /* ---------- Boss bar ---------- */
+  #bossbar{ position:absolute; top:60px; left:50%; transform:translateX(-50%); width:min(64vw,640px);
+            height:12px; border:1px solid var(--mag); border-radius:6px; background:#12061a; overflow:hidden;
+            opacity:0; transition:opacity .3s; box-shadow:0 0 14px #ff2d9555; }
+  #bossbar.show{ opacity:1; }
+  #bossfill{ height:100%; width:100%; transform-origin:left center;
+             background:linear-gradient(90deg,#ff2d55,#ff8a3d,#ffe14d); box-shadow:0 0 12px #ff2d55; transition:transform .1s linear; }
+  #bossbar::after{ content:"WARNING · CORE EXPOSED"; position:absolute; top:14px; left:0; right:0;
+                   text-align:center; font-size:9px; color:var(--mag); letter-spacing:.3em; text-shadow:var(--glow-mag); }
+
+  /* ---------- Popups ---------- */
+  #popups{ position:absolute; inset:0; overflow:hidden; }
+  .popup{ position:absolute; transform:translate(-50%,-50%); font-size:15px; font-weight:700;
+          color:var(--cyan); text-shadow:var(--glow-cyan); white-space:nowrap; }
+  .popup.go{ animation:pop 1s ease-out forwards; }
+  .popup.big{ font-size:22px; color:var(--amber); text-shadow:0 0 8px var(--amber),0 0 22px #ffb02088; }
+  .popup.cap{ color:var(--amber); text-shadow:0 0 8px var(--amber); }
+  .popup.power{ font-size:20px; color:#fff; text-shadow:0 0 10px var(--cyan),0 0 24px var(--cyan); }
+  @keyframes pop{ 0%{ opacity:0; transform:translate(-50%,-40%) scale(.7);} 12%{opacity:1;} 100%{ opacity:0; transform:translate(-50%,-160%) scale(1.05);} }
+
+  /* ---------- Center messages ---------- */
+  .center-msg{ position:absolute; top:42%; left:50%; transform:translate(-50%,-50%);
+               text-align:center; font-size:38px; font-weight:800; letter-spacing:.1em; opacity:0;
+               color:#fff; text-shadow:0 0 12px var(--cyan),0 0 28px #39f6ff88; transition:opacity .25s; }
+  .center-msg .sub{ display:block; font-size:15px; margin-top:10px; letter-spacing:.25em; color:var(--cyan); }
+  .center-msg.show{ opacity:1; animation:centerpop .4s ease-out; }
+  .center-msg.warn{ color:var(--mag); text-shadow:0 0 12px var(--mag),0 0 30px #ff2d9588; animation:blink .5s steps(2) infinite; }
+  .center-msg.warn .sub{ color:var(--mag); }
+  .center-msg.clear{ color:var(--green); text-shadow:0 0 12px var(--green),0 0 30px #8bff0066; }
+  .center-msg.stage{ color:#fff; }
+  @keyframes centerpop{ from{ transform:translate(-50%,-50%) scale(.8); } to{ transform:translate(-50%,-50%) scale(1);} }
+  @keyframes blink{ 50%{ opacity:.35; } }
+
+  /* ---------- Full screens ---------- */
+  .screen{ position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+           text-align:center; background:radial-gradient(60% 60% at 50% 45%, #0a0a24cc, #03030bee);
+           pointer-events:auto; padding:24px; }
+  .screen.show{ display:flex; animation:fade .4s ease; }
+  @keyframes fade{ from{opacity:0;} to{opacity:1;} }
+  .logo{ font-size:clamp(38px,9vw,86px); font-weight:900; letter-spacing:.06em; line-height:.95;
+         background:linear-gradient(180deg,#fff,#39f6ff 55%,#ff2d95); -webkit-background-clip:text; background-clip:text; color:transparent;
+         filter:drop-shadow(0 0 18px #39f6ff66); }
+  .logo .v2{ background:linear-gradient(180deg,#fff,#ff8a3d 55%,#ff2d95); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .subtitle{ margin-top:6px; font-size:13px; letter-spacing:.45em; color:var(--mag); text-shadow:var(--glow-mag); }
+  .prompt{ margin-top:34px; font-size:16px; color:#fff; animation:blink 1.1s steps(2) infinite; }
+  .controls{ margin-top:30px; font-size:12px; line-height:2; color:#9fb0d8; letter-spacing:.06em; max-width:520px; }
+  .controls b{ color:var(--cyan); }
+  .controls .row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+  .key{ display:inline-block; min-width:22px; padding:2px 7px; border:1px solid #34406a; border-radius:4px;
+        background:#10142c; color:#cfe6ff; font-size:11px; box-shadow:inset 0 -2px 0 #0006; }
+  .go-title{ font-size:clamp(34px,8vw,64px); font-weight:900; color:var(--mag); text-shadow:var(--glow-mag); letter-spacing:.08em; }
+  .final{ margin-top:18px; font-size:16px; color:var(--ink); line-height:1.9; }
+  .final b{ color:var(--cyan); text-shadow:var(--glow-cyan); }
+
+  /* audio toggles */
+  #audio-toggles{ position:absolute; right:16px; bottom:16px; display:flex; gap:8px; pointer-events:auto; }
+  #audio-toggles button{ font:inherit; font-size:10px; letter-spacing:.1em; color:var(--cyan); background:#0a0e22aa;
+        border:1px solid #2a3355; border-radius:4px; padding:6px 9px; cursor:pointer; text-transform:uppercase; }
+  #audio-toggles button.off{ color:#6b7699; border-color:#242c48; }
+  #audio-toggles button:hover{ border-color:var(--cyan); }
+
+  .hint{ position:absolute; left:50%; bottom:66px; transform:translateX(-50%); font-size:10px; color:#5f6b93;
+         letter-spacing:.2em; }
+  @media (max-width:640px){
+    .slot{ min-width:52px; font-size:9px; padding:5px 4px; }
+    #hud{ font-size:12px; padding:10px 12px; }
+    .hud-val{ font-size:16px; }
+  }
+</style>
+</head>
+<body>
+  <div id="game"></div>
+
+  <div id="ui">
+    <div id="hud">
+      <div class="hud-block" id="scorebox">
+        <span class="hud-label">Score</span>
+        <span class="hud-val" id="score">0000000</span>
+        <div id="lives"></div>
+      </div>
+      <div class="hud-block" id="stagebox" style="align-items:center">
+        <span class="hud-label">Stage</span>
+        <span class="hud-val" id="stage">1</span>
+      </div>
+      <div class="hud-block" id="hi" style="align-items:flex-end">
+        <span class="hud-label">Hi-Score</span>
+        <span class="hud-val" id="hi">0000000</span>
+      </div>
+    </div>
+
+    <div id="bossbar"><div id="bossfill"></div></div>
+
+    <div id="popups"></div>
+    <div id="center" class="center-msg"></div>
+
+    <div class="hint" id="hint">Collect ◆ capsules · press power to spend</div>
+    <div id="meter"></div>
+
+    <div id="audio-toggles">
+      <button id="btn-music">♪ Music: On</button>
+      <button id="btn-sfx">♫ SFX: On</button>
+    </div>
+
+    <!-- Title -->
+    <div class="screen show" id="screen-title">
+      <div class="logo">NEON<br><span class="v2">VANGUARD</span></div>
+      <div class="subtitle">SIDE · SCROLLING · ASSAULT</div>
+      <div class="prompt">▶ PRESS ENTER / SPACE / TAP TO LAUNCH</div>
+      <div class="controls">
+        <div class="row"><span class="key">◀ ▶ ▲ ▼</span> / <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> <b>move</b></div>
+        <div class="row" style="margin-top:8px"><span class="key">Space</span><span class="key">J</span><span class="key">Z</span> <b>fire</b> &nbsp;·&nbsp; <span class="key">Shift</span><span class="key">C</span><span class="key">K</span> <b>spend power</b></div>
+        <div class="row" style="margin-top:8px"><span class="key">P</span><span class="key">Esc</span> <b>pause</b> &nbsp;·&nbsp; on touch: <b>drag to fly, hold to fire</b></div>
+        <div style="margin-top:14px; color:#7f8bb5">Grab capsules → the meter advances → spend it on<br><b>Speed · Missile · Double · Laser · Option · Force&nbsp;Field</b></div>
+      </div>
+    </div>
+
+    <!-- Game over -->
+    <div class="screen" id="screen-gameover">
+      <div class="go-title">GAME OVER</div>
+      <div class="final">Score <b id="final-score">0000000</b><br>Best <b id="final-hi">0000000</b></div>
+      <div class="prompt">▶ PRESS ENTER / TAP TO CONTINUE</div>
+    </div>
+
+    <!-- Pause -->
+    <div class="screen" id="screen-pause">
+      <div class="go-title" style="color:var(--cyan);text-shadow:var(--glow-cyan)">PAUSED</div>
+      <div class="prompt">▶ PRESS P / ESC TO RESUME</div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

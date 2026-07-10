@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T05:31:37.711Z",
+  "generatedAt": "2026-07-10T06:11:06.230Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -8,7 +8,42 @@
       "prompt": "\nBuild a polished, playable 3D Gradius game built with Three.js.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- Your own original visual style — do not copy Gradius exactly.\n- Polish counts: game feel, difficulty curve, and juice. Sound is optional but welcome.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.",
       "capMinutes": 30,
       "suggestedBy": null,
-      "runs": []
+      "runs": [
+        {
+          "runId": "opus-4.8--20260710-0141",
+          "bench": "3d-gradius",
+          "model": "opus-4.8",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.206 (Claude Code)",
+          "startedAt": "2026-07-10T05:41:05.698Z",
+          "wallSeconds": 1801,
+          "totalTokens": null,
+          "totalCostUsd": null,
+          "status": "failed",
+          "exitReason": "cap",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-opus-4-8",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "18493560-becb-4f99-a0de-fb622e12fb90",
+            "[prompt]"
+          ],
+          "redactions": 0,
+          "displayName": "Opus 4.8",
+          "vendor": "Anthropic",
+          "appPath": "benches/3d-gradius/runs/opus-4.8--20260710-0141/app/index.html",
+          "transcriptPath": "benches/3d-gradius/runs/opus-4.8--20260710-0141/transcript.jsonl",
+          "screenshotPath": null
+        }
+      ]
     }
   ]
 }
