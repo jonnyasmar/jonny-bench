@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#050712">
+  <meta name="description" content="Vanta Run — an original 3D arcade space shooter.">
+  <title>VANTA RUN // Deep Space Strike</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game" aria-label="Vanta Run 3D arcade shooter">
+    <canvas id="canvas"></canvas>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div id="flash" aria-hidden="true"></div>
+
+    <header id="hud" class="hidden">
+      <section class="hud-block score-block">
+        <span class="eyebrow">SCORE</span>
+        <strong id="score">000000</strong>
+        <span id="chain">CHAIN ×1</span>
+      </section>
+      <section class="sector-block">
+        <span class="eyebrow" id="sector">SECTOR 01 // THE GLASS VEIL</span>
+        <div class="progress"><i id="progress"></i></div>
+      </section>
+      <section class="hud-block hull-block">
+        <span class="eyebrow">VANTA CORE</span>
+        <div id="health" class="health"></div>
+        <span id="weapon">TWIN PULSE · LV1</span>
+      </section>
+    </header>
+
+    <aside id="power-toast" aria-live="polite"></aside>
+    <aside id="warning" aria-live="assertive"><span>!</span><b>HEAVY SIGNAL</b><small>COMBAT FRAME INBOUND</small></aside>
+
+    <section id="menu" class="panel active">
+      <div class="kicker">BLACKSTAR FLIGHT SYSTEMS PRESENTS</div>
+      <h1><span>VANTA</span> RUN</h1>
+      <p class="tagline">Pierce the machine-dark. Leave a brighter scar.</p>
+      <button id="start" class="primary">ENGAGE <i>↗</i></button>
+      <div class="controls">
+        <div><kbd>WASD</kbd><kbd>↑↓←→</kbd><span>FLY</span></div>
+        <div><kbd>SPACE</kbd><span>FIRE</span></div>
+        <div><kbd>P</kbd><span>PAUSE</span></div>
+      </div>
+      <p class="mobile-hint">DRAG TO FLY · WEAPONS AUTO-FIRE</p>
+    </section>
+
+    <section id="pause" class="panel compact">
+      <div class="kicker">FLIGHT SUSPENDED</div>
+      <h2>PAUSED</h2>
+      <button id="resume" class="primary">RESUME</button>
+      <p>Press <kbd>P</kbd> or <kbd>ESC</kbd></p>
+    </section>
+
+    <section id="result" class="panel compact">
+      <div id="result-kicker" class="kicker">MISSION COMPLETE</div>
+      <h2 id="result-title">VEIL BROKEN</h2>
+      <div class="final-score"><span>FINAL SCORE</span><strong id="final-score">000000</strong></div>
+      <p id="result-copy">The forge signal is silent. For now.</p>
+      <button id="restart" class="primary">RUN AGAIN</button>
+    </section>
+
+    <div id="touch-fire" aria-hidden="true"><span>FIRE</span></div>
+    <div class="rotate"><b>ROTATE DEVICE</b><span>Vanta Run flies best in landscape.</span></div>
+  </main>
+  <script src="three.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

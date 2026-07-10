@@ -1,0 +1,13 @@
+Built **Vanta Run**, a polished original 3D arcade shooter.
+
+- Fully static and self-contained
+- Keyboard, mouse, and touch controls
+- Three weapon tiers, shields, repairs, chain scoring, and near-miss bonuses
+- Escalating enemy waves and multi-phase boss encounter
+- Synthesized sound effects, particles, screen shake, hit flashes, and responsive HUD
+- Pause, restart, victory, and defeat flows
+- Vendored Three.js—no runtime network dependency
+
+Entry point: [index.html](/private/var/folders/_l/4gzjzznn2z73r8kldgtyxsmw0000gn/T/jonny-bench-work-uXrPkG/index.html)
+
+Validation passed: JavaScript syntax, HTML asset references, offline dependencies, static HTTP loading, and whitespace checks.
