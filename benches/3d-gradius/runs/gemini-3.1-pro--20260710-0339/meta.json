@@ -1,0 +1,24 @@
+{
+  "runId": "gemini-3.1-pro--20260710-0339",
+  "bench": "3d-gradius",
+  "model": "gemini-3.1-pro",
+  "effort": null,
+  "cli": "gemini",
+  "cliVersion": "0.38.2",
+  "startedAt": "2026-07-10T07:39:34.861Z",
+  "wallSeconds": 1,
+  "totalTokens": null,
+  "totalCostUsd": null,
+  "status": "failed",
+  "exitReason": "error",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "-m",
+    "gemini-3.1-pro",
+    "-o",
+    "stream-json",
+    "-y"
+  ],
+  "redactions": 0
+}
