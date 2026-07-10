@@ -569,6 +569,19 @@ export function extractUsage(cli, text) {
     return { totalTokens: usageTotal > 0 ? usageTotal : null, totalCostUsd: null };
   }
 
+  if (cli === 'grok') {
+    const usageTotal = events
+      .filter((event) => event.msg === 'shell.turn.inference_done' && event.ctx)
+      .reduce((sum, event) => {
+        const ctx = event.ctx;
+        return sum
+          + (Number.isFinite(ctx.prompt_tokens) ? ctx.prompt_tokens : 0)
+          + (Number.isFinite(ctx.completion_tokens) ? ctx.completion_tokens : 0)
+          + (Number.isFinite(ctx.reasoning_tokens) ? ctx.reasoning_tokens : 0);
+      }, 0);
+    return { totalTokens: usageTotal > 0 ? usageTotal : null, totalCostUsd: null };
+  }
+
   return { totalTokens: null, totalCostUsd: null };
 }
 
@@ -585,6 +598,13 @@ async function readUsageSource(transcriptPath, outputFile) {
   if (outputFile && await pathExists(outputFile)) return readFile(outputFile, 'utf8');
   if (transcriptPath) return readFile(transcriptPath, 'utf8');
   return '';
+}
+
+async function readUsageLogSource(recipe, vars) {
+  if (!recipe.usageLogGlob) return '';
+  const match = await newestGlobMatch(substitute(recipe.usageLogGlob, vars));
+  if (!match) return '';
+  return readFile(match, 'utf8');
 }
 
 function assertRunHomeTarget(file, runHome, label) {
@@ -777,7 +797,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     }
 
     const transcriptPath = await copyTranscript(recipe, vars, runDir);
-    const usageText = await readUsageSource(transcriptPath, result.outputFile);
+    const usageText = await readUsageLogSource(recipe, vars) || await readUsageSource(transcriptPath, result.outputFile);
     const usage = extractUsage(model.cli, usageText);
     const meta = {
       runId,

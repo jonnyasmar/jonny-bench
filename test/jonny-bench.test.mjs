@@ -32,7 +32,8 @@ async function makeRepo({
   modelEffort = 'high',
   modelFlagship = true,
   modelRank = 7,
-  includeCapTimeout = false
+  includeCapTimeout = false,
+  usageLogGlob = null
 } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-test-'));
   const home = path.join(root, 'real-home');
@@ -115,6 +116,7 @@ process.exit(42);
     transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
     preCreateDirs: ['$RUN_HOME/.fake']
   };
+  if (usageLogGlob) fakeRecipe.usageLogGlob = usageLogGlob;
   if (includeAuth) {
     fakeEnv.AUTH_FILE = '$RUN_HOME/auth/auth.json';
     fakeEnv.SEED_FILE = '$RUN_HOME/auth/seed.json';
@@ -445,6 +447,21 @@ test('claude usage extraction prefers cli-output over transcript', async () => {
   assert.equal(meta.totalCostUsd, 0.12);
 });
 
+test('usageLogGlob is read before RUN_HOME cleanup for grok usage', async () => {
+  const { root, env } = await makeRepo({
+    mode: 'grok-usage-log',
+    cliName: 'grok',
+    usageLogGlob: '$RUN_HOME/.grok/logs/unified.jsonl'
+  });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+
+  const runDir = await findRunDir(root);
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.equal(meta.totalTokens, 160);
+  assert.equal(meta.totalCostUsd, null);
+});
+
 test('authExec and seedFiles destination paths must stay inside RUN_HOME before run allocation', async () => {
   const authCase = await makeRepo({ includeAuth: true, authWriteTo: '$HOME/outside-auth.json' });
   const authResult = runBench(authCase.root, authCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
@@ -619,5 +636,51 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
     JSON.stringify({ type: 'event_msg', payload: { type: 'task_complete' } })
   ].join('\n');
   assert.equal(extractUsage('codex', realCodexRolloutExcerpt).totalTokens, 433360);
+
+  const grokUnifiedLog = [
+    JSON.stringify({
+      ts: '2026-07-10T15:59:42.423Z',
+      src: 'shell',
+      pid: 89903,
+      lvl: 'info',
+      sid: '019f4cbf-5b96-7d21-a0bc-dc6f6218e2d5',
+      msg: 'shell.turn.inference_done',
+      ctx: {
+        loop_index: 4,
+        model_elapsed_ms: 1542,
+        elapsed_since_turn_start_ms: 58541,
+        ttft_ms: 173,
+        itl_p50_ms: 0,
+        attempts: 1,
+        prompt_tokens: 79185,
+        cached_prompt_tokens: 78208,
+        completion_tokens: 79,
+        reasoning_tokens: 21,
+        tokens_per_sec: 57.7
+      }
+    }),
+    JSON.stringify({
+      ts: '2026-07-10T19:13:46.336Z',
+      src: 'shell',
+      pid: 82873,
+      lvl: 'info',
+      sid: '019f4d73-0b20-7cb1-99ae-f496c1db89c8',
+      msg: 'shell.turn.inference_done',
+      ctx: {
+        loop_index: 1,
+        model_elapsed_ms: 11185,
+        elapsed_since_turn_start_ms: 11187,
+        ttft_ms: 3918,
+        itl_p50_ms: 0,
+        attempts: 1,
+        prompt_tokens: 45531,
+        cached_prompt_tokens: 6016,
+        completion_tokens: 575,
+        reasoning_tokens: 136,
+        tokens_per_sec: 79.1
+      }
+    })
+  ].join('\n');
+  assert.deepEqual(extractUsage('grok', grokUnifiedLog), { totalTokens: 125527, totalCostUsd: null });
   assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null });
 });

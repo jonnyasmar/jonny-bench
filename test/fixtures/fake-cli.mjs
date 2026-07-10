@@ -43,6 +43,30 @@ async function main() {
 
   process.stdout.write(`${JSON.stringify({ type: 'assistant', usage: { input_tokens: 2, output_tokens: 3 } })}\n`);
   process.stdout.write(`${JSON.stringify({ type: 'result', total_cost_usd: 0.12, usage: { input_tokens: 5, output_tokens: 7 } })}\n`);
+  if (mode === 'grok-usage-log') {
+    const logDir = path.join(home, '.grok', 'logs');
+    await mkdir(logDir, { recursive: true });
+    await writeFile(path.join(logDir, 'unified.jsonl'), [
+      JSON.stringify({
+        msg: 'shell.turn.inference_done',
+        ctx: {
+          prompt_tokens: 100,
+          cached_prompt_tokens: 40,
+          completion_tokens: 20,
+          reasoning_tokens: 5
+        }
+      }),
+      JSON.stringify({
+        msg: 'shell.turn.inference_done',
+        ctx: {
+          prompt_tokens: 30,
+          cached_prompt_tokens: 10,
+          completion_tokens: 4,
+          reasoning_tokens: 1
+        }
+      })
+    ].join('\n') + '\n');
+  }
   if (process.env.FAKE_STREAM_LEAK) process.stdout.write(`${process.env.FAKE_STREAM_LEAK}\n`);
   if (process.env.FAKE_ARTIFACT_LEAK) {
     const artifactPath = argv[argv.indexOf('--artifact') + 1];

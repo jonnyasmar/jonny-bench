@@ -114,10 +114,11 @@
       "--verbatim"
     ],
     "transcriptGlob": "$RUN_HOME/.grok/sessions/**/events.jsonl",
+    "usageLogGlob": "$RUN_HOME/.grok/logs/unified.jsonl",
     "preCreateDirs": [
       "$RUN_HOME/.grok"
     ],
-    "usage": "No stable total-usage event exists in the inspected real 3d-gradius grok-4.5 run: cli-output.jsonl contains streaming thought/text/end events, and transcript.jsonl contains lifecycle/tool events without token or cost totals. extraction records totalTokens and totalCostUsd as null until a real output shape is proven. reasoning effort is pinned with --reasoning-effort $EFFORT."
+    "usage": "After the child exits and before RUN_HOME cleanup, usage is read from $RUN_HOME/.grok/logs/unified.jsonl records where msg is shell.turn.inference_done and ctx contains prompt_tokens, cached_prompt_tokens, completion_tokens, and reasoning_tokens. prompt_tokens already includes cached_prompt_tokens, so totalTokens sums prompt_tokens + completion_tokens + reasoning_tokens across inference_done records; totalCostUsd stays null. reasoning effort is pinned with --reasoning-effort $EFFORT."
   },
   "antigravity": {
     "bin": "agy",
