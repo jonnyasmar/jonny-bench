@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>NEON VANGUARD — a 3D shooter</title>
+<style>
+  :root {
+    --cyan: #38f7ff;
+    --magenta: #ff3ea5;
+    --amber: #ffc234;
+    --violet: #b07bff;
+    --ink: #05060f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #05060f;
+    color: #eaf6ff;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  #app { position: fixed; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed; inset: 0; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 18px clamp(14px, 3vw, 40px);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 8px rgba(56,247,255,0.35);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  #hud.on { opacity: 1; }
+  .hud-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+  .hud-block { display: flex; flex-direction: column; gap: 4px; }
+  .hud-label { font-size: 10px; letter-spacing: 3px; color: #6f86a8; text-transform: uppercase; }
+  .hud-value { font-size: clamp(20px, 3.4vw, 30px); font-weight: 700; letter-spacing: 1px; color: #eaf6ff; }
+  #score .hud-value { color: var(--cyan); }
+  #hi .hud-value { color: var(--amber); }
+  #stageInfo { text-align: right; }
+  #stageInfo .hud-value { color: var(--magenta); font-size: clamp(14px, 2.2vw, 20px); }
+  #lives .hud-value { color: var(--magenta); letter-spacing: 4px; }
+
+  /* ---------- power meter (Gradius-style gauge) ---------- */
+  #powerbar { display: flex; gap: 6px; align-items: flex-end; }
+  .pw {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 5px 9px 7px; border: 1px solid rgba(120,150,190,0.35);
+    border-radius: 5px; min-width: 62px; background: rgba(10,16,32,0.45);
+    transition: all 0.16s ease; position: relative;
+  }
+  .pw .pw-name { font-size: 10px; letter-spacing: 1.5px; color: #8fa6c8; text-transform: uppercase; }
+  .pw.active {
+    border-color: var(--amber);
+    background: rgba(255,194,52,0.14);
+    box-shadow: 0 0 16px rgba(255,194,52,0.45);
+    transform: translateY(-3px);
+  }
+  .pw.active .pw-name { color: #fff; text-shadow: 0 0 8px var(--amber); }
+  .pw.owned { border-color: rgba(56,247,255,0.55); }
+  .pw.owned .pw-name { color: var(--cyan); }
+  .pw .pw-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(120,150,190,0.3);
+  }
+  .pw.owned .pw-dot { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+  /* ---------- overlays ---------- */
+  .overlay {
+    position: fixed; inset: 0; pointer-events: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; text-align: center; padding: 24px;
+    background: radial-gradient(ellipse at center, rgba(8,10,24,0.55) 0%, rgba(4,5,14,0.9) 75%);
+    backdrop-filter: blur(2px);
+    z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+  .title {
+    font-size: clamp(40px, 10vw, 104px); font-weight: 800; letter-spacing: 6px; line-height: 0.95;
+    background: linear-gradient(180deg, #ffffff 0%, var(--cyan) 55%, var(--violet) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 24px rgba(56,247,255,0.5));
+  }
+  .subtitle { font-size: clamp(13px, 2.5vw, 17px); letter-spacing: 5px; color: var(--magenta); text-transform: uppercase; }
+  .panel {
+    max-width: 520px; font-size: 14px; line-height: 1.85; color: #b9cbe4;
+    letter-spacing: 0.4px;
+  }
+  .panel b { color: #eaf6ff; }
+  .keycap {
+    display: inline-block; min-width: 22px; padding: 2px 7px; margin: 0 1px;
+    border: 1px solid rgba(120,150,190,0.5); border-radius: 5px;
+    background: rgba(20,28,48,0.8); color: #dff1ff; font-size: 12px; font-weight: 600;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  }
+  .btn {
+    pointer-events: auto; cursor: pointer;
+    padding: 15px 44px; border: 1.5px solid var(--cyan); border-radius: 40px;
+    background: rgba(56,247,255,0.08); color: #eaf6ff;
+    font-size: 16px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    transition: all 0.18s ease;
+    box-shadow: 0 0 20px rgba(56,247,255,0.25), inset 0 0 20px rgba(56,247,255,0.06);
+  }
+  .btn:hover { background: rgba(56,247,255,0.2); box-shadow: 0 0 34px rgba(56,247,255,0.5); transform: scale(1.04); }
+  .btn:active { transform: scale(0.98); }
+  .flash { animation: flash 1.4s ease-in-out infinite; }
+  @keyframes flash { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
+  .big-num { font-size: clamp(30px,7vw,60px); font-weight: 800; color: var(--amber); letter-spacing: 2px;
+    filter: drop-shadow(0 0 16px rgba(255,194,52,0.5)); }
+  .stat-line { font-size: 15px; color: #cdddf2; letter-spacing: 1px; }
+  .stat-line span { color: var(--cyan); font-weight: 700; }
+  #stageBanner {
+    position: fixed; top: 42%; left: 0; right: 0; text-align: center;
+    pointer-events: none; opacity: 0; z-index: 8;
+  }
+  #stageBanner .sb-main { font-size: clamp(30px,6vw,58px); font-weight: 800; letter-spacing: 8px;
+    color: #fff; filter: drop-shadow(0 0 20px var(--magenta)); }
+  #stageBanner .sb-sub { font-size: clamp(12px,2.4vw,18px); letter-spacing: 6px; color: var(--cyan); margin-top: 8px; }
+
+  /* ---------- touch controls ---------- */
+  #touch { position: fixed; inset: 0; z-index: 6; display: none; pointer-events: none; }
+  #touch.on { display: block; }
+  #stick {
+    position: absolute; left: 4vw; bottom: 5vh; width: 130px; height: 130px;
+    border-radius: 50%; border: 2px solid rgba(56,247,255,0.35);
+    background: rgba(20,30,55,0.35); pointer-events: auto;
+  }
+  #stickNub {
+    position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+    border-radius: 50%; background: rgba(56,247,255,0.55); box-shadow: 0 0 18px var(--cyan);
+  }
+  #fireBtn {
+    position: absolute; right: 5vw; bottom: 7vh; width: 108px; height: 108px; border-radius: 50%;
+    border: 2px solid rgba(255,62,165,0.6); background: rgba(255,62,165,0.18);
+    color: #fff; font-weight: 800; letter-spacing: 2px; font-size: 15px;
+    pointer-events: auto; display: flex; align-items: center; justify-content: center;
+  }
+  .hint { font-size: 12px; letter-spacing: 2px; color: #6f86a8; }
+  #fps { position: fixed; right: 8px; bottom: 6px; font-size: 10px; color: #35507a; z-index: 9; pointer-events: none; }
+  .loader { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .spin { width: 34px; height: 34px; border: 3px solid rgba(56,247,255,0.2); border-top-color: var(--cyan);
+    border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="hud">
+    <div class="hud-row">
+      <div class="hud-block" id="score"><div class="hud-label">Score</div><div class="hud-value">0</div></div>
+      <div class="hud-block" id="hi"><div class="hud-label">Best</div><div class="hud-value">0</div></div>
+      <div class="hud-block" id="stageInfo"><div class="hud-label">Sector</div><div class="hud-value">1</div></div>
+    </div>
+    <div class="hud-row" style="align-items:flex-end;">
+      <div id="powerbar"></div>
+      <div class="hud-block" id="lives" style="text-align:right;"><div class="hud-label">Ships</div><div class="hud-value">▲▲</div></div>
+    </div>
+  </div>
+
+  <div id="stageBanner"><div class="sb-main"></div><div class="sb-sub"></div></div>
+
+  <div id="touch">
+    <div id="stick"><div id="stickNub"></div></div>
+    <div id="fireBtn">FIRE</div>
+  </div>
+
+  <!-- Loading -->
+  <div class="overlay" id="loadingOverlay">
+    <div class="loader"><div class="spin"></div><div class="hint">INITIALIZING VANGUARD SYSTEMS…</div></div>
+  </div>
+
+  <!-- Title -->
+  <div class="overlay hidden" id="titleOverlay">
+    <div class="subtitle">A THREE.JS ARCADE SHOOTER</div>
+    <div class="title">NEON<br>VANGUARD</div>
+    <div class="panel">
+      Pilot the <b>Vanguard</b> through five hostile sectors. Collect glowing
+      <b style="color:var(--amber)">capsules</b>, arm the weapon gauge, and deploy trailing
+      <b style="color:var(--cyan)">Options</b> to multiply your firepower.
+      <br><br>
+      <span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span>
+      / <span class="keycap">↑↓←→</span> move &nbsp;·&nbsp;
+      <span class="keycap">Space</span>/<span class="keycap">J</span> fire &nbsp;·&nbsp;
+      <span class="keycap">K</span>/<span class="keycap">Enter</span> arm capsule &nbsp;·&nbsp;
+      <span class="keycap">P</span> pause
+    </div>
+    <div class="btn" id="startBtn">Launch</div>
+    <div class="hint">tip — hold fire. bank capsules, then arm Options for a wide spread.</div>
+  </div>
+
+  <!-- Pause -->
+  <div class="overlay hidden" id="pauseOverlay">
+    <div class="title" style="font-size:clamp(30px,7vw,64px);">PAUSED</div>
+    <div class="btn" id="resumeBtn">Resume</div>
+    <div class="hint">press <span class="keycap">P</span> to resume</div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="overlay hidden" id="overOverlay">
+    <div class="subtitle" id="overTitle" style="color:var(--magenta)">VANGUARD DOWN</div>
+    <div class="big-num" id="overScore">0</div>
+    <div class="stat-line">Sector reached <span id="overStage">1</span> &nbsp;·&nbsp; Best <span id="overBest">0</span></div>
+    <div class="btn" id="retryBtn">Retry</div>
+  </div>
+
+  <!-- Victory -->
+  <div class="overlay hidden" id="winOverlay">
+    <div class="subtitle" style="color:var(--amber)">SECTORS CLEARED</div>
+    <div class="title" style="font-size:clamp(34px,8vw,80px);">VICTORY</div>
+    <div class="big-num" id="winScore">0</div>
+    <div class="stat-line">You held the line. <span id="winBest">0</span> best.</div>
+    <div class="btn" id="winBtn">Play Again</div>
+  </div>
+
+  <div id="fps"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./assets/three/three.module.js",
+      "three/addons/": "./assets/three/addons/"
+    }
+  }
+  </script>
+  <script type="module" src="./assets/game.js"></script>
+</body>
+</html>

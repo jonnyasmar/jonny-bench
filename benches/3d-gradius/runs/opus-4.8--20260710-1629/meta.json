@@ -1,0 +1,32 @@
+{
+  "runId": "opus-4.8--20260710-1629",
+  "bench": "3d-gradius",
+  "model": "opus-4.8",
+  "effort": "high",
+  "cli": "claude-code",
+  "cliVersion": "2.1.206 (Claude Code)",
+  "startedAt": "2026-07-10T20:29:39.939Z",
+  "wallSeconds": 1923,
+  "rootAbsolutePaths": [],
+  "totalTokens": 5257574,
+  "totalCostUsd": 5.9794944999999995,
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "--model",
+    "claude-opus-4-8",
+    "--effort",
+    "high",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+    "--session-id",
+    "39124760-b215-40de-9d63-73b5efc2ff58",
+    "[prompt]"
+  ],
+  "appPath": "benches/3d-gradius/runs/opus-4.8--20260710-1629/app/index.html",
+  "screenshotPath": "benches/3d-gradius/runs/opus-4.8--20260710-1629/screenshot.png",
+  "redactions": 0
+}
