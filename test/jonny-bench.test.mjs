@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/promises';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -441,7 +441,25 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
   ].join('\n');
   assert.deepEqual(extractUsage('codex', rollout), { totalTokens: 26, totalCostUsd: null });
 
-  const realCodexTranscript = path.join(repoRoot, 'benches', 'flappy', 'runs', 'gpt-5.5--20260709-1835', 'transcript.jsonl');
-  assert.equal(extractUsage('codex', readFileSync(realCodexTranscript, 'utf8')).totalTokens, 433360);
+  const realCodexRolloutExcerpt = [
+    JSON.stringify({ type: 'event_msg', payload: { type: 'agent_message', phase: 'final_answer' } }),
+    JSON.stringify({
+      type: 'event_msg',
+      payload: {
+        type: 'token_count',
+        info: {
+          total_token_usage: {
+            input_tokens: 419579,
+            cached_input_tokens: 395008,
+            output_tokens: 13781,
+            reasoning_output_tokens: 1877,
+            total_tokens: 433360
+          }
+        }
+      }
+    }),
+    JSON.stringify({ type: 'event_msg', payload: { type: 'task_complete' } })
+  ].join('\n');
+  assert.equal(extractUsage('codex', realCodexRolloutExcerpt).totalTokens, 433360);
   assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null });
 });

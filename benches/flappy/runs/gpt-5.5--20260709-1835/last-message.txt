@@ -1,8 +1,0 @@
-Built the static game in [index.html](/private/var/folders/_l/4gzjzznn2z73r8kldgtyxsmw0000gn/T/jonny-bench-work-R5v7rq/index.html).
-
-It’s a self-contained canvas game with click/tap/space controls, score tracking, persisted best score, restart/game-over flow, original skyline-glider visuals, difficulty scaling, screen shake, particles, flash feedback, and synthesized sound effects.
-
-Verification:
-- Inline JavaScript parses successfully with Node.
-- No server-side code or external assets required.
-- Headless Chrome was attempted for screenshot validation, but the local Chrome binary exited in this sandbox before producing output.
