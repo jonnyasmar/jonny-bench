@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSpawnArgvWithMeta, createMeterTempState, detectRootAbsoluteAssetPaths, estimateCostUsd, extractUsage, mergeTranscriptFiles, parseMeterOut } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, cleanupActiveMeterProxySync, createMeterTempState, detectRootAbsoluteAssetPaths, estimateCostUsd, extractUsage, mergeTranscriptFiles, parseMeterOut, trackMeterProxy } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -704,6 +704,20 @@ test('metering temp files are created outside the run directory', async () => {
     await rm(state.meterOut, { force: true });
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('tracked meter cleanup removes temp state synchronously and is idempotent', async () => {
+  const state = await createMeterTempState();
+  await writeFile(path.join(state.confdir, 'mitmproxy-ca.pem'), 'private key material would be here\n');
+  await writeFile(state.meterOut, `${JSON.stringify({
+    responseId: 'resp',
+    usageMetadata: { promptTokenCount: 1, totalTokenCount: 1 }
+  })}\n`);
+  trackMeterProxy(state);
+  cleanupActiveMeterProxySync();
+  assert.equal(existsSync(state.confdir), false);
+  assert.equal(existsSync(state.meterOut), false);
+  cleanupActiveMeterProxySync();
 });
 
 test('usage extraction supports claude, codex, and absent usage shapes', () => {

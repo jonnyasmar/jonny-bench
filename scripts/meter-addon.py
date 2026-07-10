@@ -15,12 +15,16 @@ def response(flow):
     out_file = os.environ.get("METER_OUT", "")
     if not endpoint_match or not out_file:
         return
+    if not os.path.isabs(out_file):
+        return
     if endpoint_match not in flow.request.pretty_url:
         return
 
     try:
         body = flow.response.get_text(strict=False)
     except Exception:
+        return
+    if body is None:
         return
 
     for usage_metadata in usage_metadata_events(body):
@@ -31,7 +35,7 @@ def response(flow):
         }
         if not numeric:
             continue
-        os.makedirs(os.path.dirname(out_file) or ".", exist_ok=True)
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
         with open(out_file, "a", encoding="utf-8") as handle:
             handle.write(json.dumps({
                 "responseId": flow.id,

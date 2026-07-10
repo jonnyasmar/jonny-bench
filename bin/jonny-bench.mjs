@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { access, chmod, copyFile, cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import { constants as fsConstants, createWriteStream, existsSync } from 'node:fs';
+import { constants as fsConstants, createWriteStream, existsSync, rmSync } from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,6 +16,48 @@ const PAYLOAD_LIMIT_BYTES = 25 * 1024 * 1024;
 const ALLOWLIST_ENV = ['PATH', 'TERM', 'LANG', 'LC_ALL'];
 const APP_DIR_CANDIDATES = ['dist', 'build', 'out', '.'];
 const BASE_CHILD_PATH = ['/usr/bin', '/bin', '/usr/sbin', '/sbin', '/usr/local/bin', '/opt/homebrew/bin'];
+let activeMeterProxy = null;
+
+export function trackMeterProxy(meter) {
+  activeMeterProxy = meter || null;
+}
+
+function untrackMeterProxy(meter) {
+  if (!meter || activeMeterProxy === meter) activeMeterProxy = null;
+}
+
+export function cleanupActiveMeterProxySync() {
+  const meter = activeMeterProxy;
+  if (!meter) return;
+  try {
+    if (meter.child?.pid) process.kill(meter.child.pid, 'SIGTERM');
+    else if (typeof meter.child?.kill === 'function') meter.child.kill('SIGTERM');
+  } catch {
+    // Best-effort cleanup during signal/exit handling.
+  }
+  try {
+    if (meter.confdir) rmSync(meter.confdir, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup during signal/exit handling.
+  }
+  try {
+    if (meter.meterOut) rmSync(meter.meterOut, { force: true });
+  } catch {
+    // Best-effort cleanup during signal/exit handling.
+  }
+  activeMeterProxy = null;
+}
+
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    cleanupActiveMeterProxySync();
+    process.removeAllListeners(signal);
+    process.kill(process.pid, signal);
+  });
+}
+process.on('exit', () => {
+  cleanupActiveMeterProxySync();
+});
 
 function usage(exitCode = 1) {
   const text = `Usage:
@@ -788,16 +830,20 @@ async function waitForMeterReady({ caPath, port }, timeoutMs = 10_000) {
 
 async function cleanupMeterProxy(meter) {
   if (!meter) return;
-  if (meter.child && meter.child.exitCode === null && meter.child.signalCode === null) {
-    meter.child.kill('SIGTERM');
-    await Promise.race([
-      new Promise((resolve) => meter.child.once('close', resolve)),
-      new Promise((resolve) => setTimeout(resolve, 1_000))
-    ]);
-    if (meter.child.exitCode === null && meter.child.signalCode === null) meter.child.kill('SIGKILL');
+  try {
+    if (meter.child && meter.child.exitCode === null && meter.child.signalCode === null) {
+      meter.child.kill('SIGTERM');
+      await Promise.race([
+        new Promise((resolve) => meter.child.once('close', resolve)),
+        new Promise((resolve) => setTimeout(resolve, 1_000))
+      ]);
+      if (meter.child.exitCode === null && meter.child.signalCode === null) meter.child.kill('SIGKILL');
+    }
+    await rm(meter.confdir, { recursive: true, force: true });
+    await rm(meter.meterOut, { force: true });
+  } finally {
+    untrackMeterProxy(meter);
   }
-  await rm(meter.confdir, { recursive: true, force: true });
-  await rm(meter.meterOut, { force: true });
 }
 
 async function maybeStartMeterProxy(recipe) {
@@ -832,6 +878,7 @@ async function maybeStartMeterProxy(recipe) {
     repoPath('scripts', 'meter-addon.py')
   ], { cwd: process.cwd(), env, shell: false, stdio: 'ignore' });
   meter.child.on('error', () => {});
+  trackMeterProxy(meter);
   const ready = await waitForMeterReady(meter);
   if (!ready) {
     console.error('Metering skipped: mitmdump did not become ready; token counts remain null.');
