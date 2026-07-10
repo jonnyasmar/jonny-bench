@@ -8,6 +8,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { extractUsage } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
+import './embed-harness.test.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runner = path.join(repoRoot, 'bin', 'jonny-bench.mjs');

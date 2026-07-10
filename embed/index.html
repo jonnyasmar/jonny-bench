@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jonny-bench embed</title>
+  <style>body{margin:0;font:14px system-ui,sans-serif;color:#111;background:#fff}#status{padding:16px;white-space:pre-wrap}</style>
+</head>
+<body>
+  <div id="status">Loading embed...</div>
+  <script>
+    // Sandboxed iframes can have an opaque origin where storage access throws.
+    // Some bench apps persist transient scores/settings, so this wrapper leaves
+    // submissions unchanged and installs ephemeral storage only when native
+    // localStorage/sessionStorage is blocked, before app scripts execute.
+    const APP_PATH_RE = /^goals\/[a-z0-9-]+\/runs\/[A-Za-z0-9.\-]+\/app\/$/;
+    const status = document.getElementById('status');
+    function showError(message) {
+      status.textContent = message;
+      status.style.color = '#b00020';
+    }
+    function createMemoryStorage() {
+      const values = new Map();
+      return {
+        get length() { return values.size; },
+        key(index) { return Array.from(values.keys())[Number(index)] ?? null; },
+        getItem(key) {
+          key = String(key);
+          return values.has(key) ? values.get(key) : null;
+        },
+        setItem(key, value) { values.set(String(key), String(value)); },
+        removeItem(key) { values.delete(String(key)); },
+        clear() { values.clear(); }
+      };
+    }
+    function installStorageShim(name) {
+      const probe = '__jonny_bench_storage_probe__';
+      try {
+        const storage = window[name];
+        storage.setItem(probe, '1');
+        storage.removeItem(probe);
+      } catch {
+        Object.defineProperty(window, name, { configurable: true, enumerable: true, value: createMemoryStorage() });
+      }
+    }
+    function escapeAttr(value) {
+      return value.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char]);
+    }
+    function withBase(html, href) {
+      const base = `<base href="${escapeAttr(href)}">`;
+      return /<head\b[^>]*>/i.test(html)
+        ? html.replace(/<head\b[^>]*>/i, (match) => `${match}${base}`)
+        : `${base}${html}`;
+    }
+    async function main() {
+      const app = new URLSearchParams(location.search).get('app') || '';
+      if (!APP_PATH_RE.test(app)) {
+        showError('Invalid app path. Expected goals/<slug>/runs/<runId>/app/.');
+        return;
+      }
+
+      installStorageShim('localStorage');
+      installStorageShim('sessionStorage');
+
+      const appDir = new URL(`../${app}`, location.href).href;
+      const response = await fetch(new URL('index.html', appDir));
+      if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+      document.open();
+      document.write(withBase(await response.text(), appDir));
+      document.close();
+    }
+    main().catch((error) => showError(error.message || String(error)));
+  </script>
+</body>
+</html>

@@ -21,6 +21,8 @@ Bench runs execute as your normal OS user. The runner strips agent env/config an
 
 Before publishing, jonny-bench mechanically redacts real home paths in text artifacts to `/Users/redacted`, then scans the run output for common secrets, private keys, JWTs, non-allowlisted emails, and remaining real-home paths. A finding blocks publish before `git add`; `--allow-leaks` exists for intentional overrides and prints a warning.
 
+Published submissions stay unmodified. The `/embed/` harness is only a viewer wrapper for sandboxed iframes: it validates a repo-local `goals/<slug>/runs/<runId>/app/` target, loads that app in-place, and provides per-load in-memory `localStorage`/`sessionStorage` only when the browser blocks native storage for an opaque origin.
+
 The roadmap answer for stronger isolation is a separate OS user or container. The current leak gate is a pre-publish safety net, not a filesystem security boundary.
 
 ## Results
