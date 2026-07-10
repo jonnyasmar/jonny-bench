@@ -41,6 +41,8 @@ benches/<slug>/runs/<runId>/
 
 `manifest.json` is regenerated from the tree so the viewer can pick up new runs without a www redeploy. GitHub Pages serves this repo, and `getatrium.dev/bench` reads the published manifest.
 
+> **Operational note — regen after a schema change.** Each bench run is a separate `node` process that loads the runner code at launch. If you change the runner's manifest shape while a run is in flight, that run's completion-time regen writes the *old* shape and silently reverts your change. After any runner/manifest-schema change, wait for in-flight runs to finish, then run `node bin/jonny-bench.mjs regen` once and commit the result.
+
 ## Models
 
 Contestants are models via CLI, not abstract model names. For example, `Opus 4.8 via Claude Code v2.1.205` is the contestant, because the CLI, flags, permissions, and transcript format are part of the run.
