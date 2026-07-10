@@ -130,7 +130,7 @@ process.exit(42);
     }];
   }
   await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ [cliName]: fakeRecipe, fake: fakeRecipe }, null, 2));
-  await writeFile(path.join(root, 'jonny-bench-instructions.md'), 'Global rule: keep it terse.\n');
+  await writeFile(path.join(root, 'jonny-bench-instructions.md'), 'global instructions: keep it terse.\n');
   await writeFile(path.join(root, 'benches', 'tiny', 'bench.md'), `---
 slug: tiny
 title: Tiny App
@@ -214,6 +214,9 @@ test('dry-run appends run ids and validates the manifest', async () => {
   const validate = spawnSync(process.execPath, [validator], { cwd: root, env, encoding: 'utf8' });
   assert.equal(validate.status, 0, validate.stderr);
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.benches[0].prompt, 'Build a tiny app.\nKeep this prompt as one argv element.');
+  assert.equal(manifest.benches[0].prompt.includes('global instructions'), false);
+  assert.equal(manifest.benches[0].sharedInstructions, await readFile(path.join(root, 'jonny-bench-instructions.md'), 'utf8'));
   assert.equal(manifest.benches[0].runs.length, 0);
   assert.equal(manifest.benches[0].runs.some((run) => run.dryRun === true), false);
 });
@@ -271,13 +274,13 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(record.argv[6], '--session');
   assert.match(record.argv[7], /^[0-9a-f-]{36}$/);
   assert.equal(record.argv[8], '--prompt');
-  assert.equal(record.argv[9], 'Global rule: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.argv[9], 'global instructions: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.argv[10], '--artifact');
   assert.ok(path.isAbsolute(record.argv[11]));
   assert.equal(record.argv[12], '--home-template');
   assert.ok(path.isAbsolute(record.argv[13]));
   assert.equal(record.argv.length, 14);
-  assert.equal(record.env.PROMPT_COPY, 'Global rule: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.env.PROMPT_COPY, 'global instructions: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.env.CUSTOM_ENV, `model=fake-model-arg session=${record.argv[7]}`);
 
   assert.ok(record.cred.path.startsWith(record.env.HOME));

@@ -70,15 +70,26 @@ function parseFrontmatter(source, file) {
 }
 
 export async function loadBench(slug) {
+  const bench = await loadBenchSpec(slug);
+  const instructions = (await readFile(repoPath('jonny-bench-instructions.md'), 'utf8')).trim();
+  const prompt = `${instructions}\n\n---\n\n${bench.prompt}\n`;
+  return { ...bench, prompt };
+}
+
+async function loadBenchSpec(slug) {
   const file = repoPath('benches', slug, 'bench.md');
   const parsed = parseFrontmatter(await readFile(file, 'utf8'), file);
   for (const key of ['slug', 'title', 'capMinutes']) {
     if (parsed.data[key] === undefined) throw new Error(`${file} missing ${key}`);
   }
   if (parsed.data.slug !== slug) throw new Error(`${file} slug ${parsed.data.slug} does not match ${slug}`);
-  const instructions = (await readFile(repoPath('jonny-bench-instructions.md'), 'utf8')).trim();
-  const prompt = `${instructions}\n\n---\n\n${parsed.body.trim()}\n`;
-  return { ...parsed.data, prompt, file };
+  return { ...parsed.data, prompt: parsed.body.trim(), file };
+}
+
+async function readSharedInstructions() {
+  const file = repoPath('jonny-bench-instructions.md');
+  if (!(await pathExists(file))) return null;
+  return readFile(file, 'utf8');
 }
 
 function formatLocalRunStamp(date = new Date()) {
@@ -1005,9 +1016,10 @@ async function commandRegen(args) {
 
 export async function regenerateManifest() {
   const models = await readJson(repoPath('models.json'));
+  const sharedInstructions = await readSharedInstructions();
   const benches = [];
   for (const slug of await discoverBenchSlugs()) {
-    const bench = await loadBench(slug);
+    const bench = await loadBenchSpec(slug);
     const runs = [];
     const runsDir = repoPath('benches', slug, 'runs');
     if (await pathExists(runsDir)) {
@@ -1049,6 +1061,7 @@ export async function regenerateManifest() {
       slug: bench.slug,
       title: bench.title,
       prompt: bench.prompt,
+      sharedInstructions,
       capMinutes: bench.capMinutes,
       suggestedBy: bench.suggestedBy ?? null,
       runs
@@ -1081,6 +1094,9 @@ export async function validateManifest(manifest = null) {
     if (!bench.slug) errors.push(`${prefix}.slug missing`);
     if (!bench.title) errors.push(`${prefix}.title missing`);
     if (typeof bench.prompt !== 'string') errors.push(`${prefix}.prompt must be string`);
+    if (bench.sharedInstructions !== undefined && bench.sharedInstructions !== null && typeof bench.sharedInstructions !== 'string') {
+      errors.push(`${prefix}.sharedInstructions must be an optional string|null`);
+    }
     if (!Number.isFinite(bench.capMinutes)) errors.push(`${prefix}.capMinutes must be number`);
     if (!Array.isArray(bench.runs)) errors.push(`${prefix}.runs must be array`);
     for (const [runIdx, run] of (bench.runs || []).entries()) {
