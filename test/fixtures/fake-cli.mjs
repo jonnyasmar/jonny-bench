@@ -29,6 +29,18 @@ async function main() {
     seed
   }, null, 2));
 
+  if (mode === 'cap-with-app') {
+    process.stdout.write(`${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 100, output_tokens: 50 } } })}\n`);
+    process.stdout.write(`${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 20, output_tokens: 10 } } })}\n`);
+    await mkdir(path.join(process.cwd(), 'dist'), { recursive: true });
+    await writeFile(
+      path.join(process.cwd(), 'dist', 'index.html'),
+      '<!doctype html><title>fake bench app</title><h1>fake</h1>'
+    );
+    await sleep(60_000);
+    return;
+  }
+
   process.stdout.write(`${JSON.stringify({ type: 'assistant', usage: { input_tokens: 2, output_tokens: 3 } })}\n`);
   process.stdout.write(`${JSON.stringify({ type: 'result', total_cost_usd: 0.12, usage: { input_tokens: 5, output_tokens: 7 } })}\n`);
   if (process.env.FAKE_STREAM_LEAK) process.stdout.write(`${process.env.FAKE_STREAM_LEAK}\n`);

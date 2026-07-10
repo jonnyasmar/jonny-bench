@@ -411,6 +411,21 @@ test('wall-clock cap kills the child and still publishes a failed run', async ()
   assert.equal(manifest.benches[0].runs[0].transcriptPath.endsWith('/cli-output.jsonl'), true);
 });
 
+test('wall-clock cap still publishes the app and a best-effort partial usage total', async () => {
+  const { root, env } = await makeRepo({ mode: 'cap-with-app', capMinutes: 0.01, cliName: 'claude-code' });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+  const runDir = await findRunDir(root);
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.equal(meta.exitReason, 'cap');
+  assert.equal(meta.status, 'failed');
+  assert.equal(existsSync(path.join(runDir, 'app', 'index.html')), true);
+  assert.equal(meta.totalTokens, 180);
+  assert.equal(meta.totalCostUsd, null);
+  const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.benches[0].runs[0].appPath.endsWith('/app/index.html'), true);
+});
+
 test('preflight refuses dirty files outside run dirs and manifest before spawning', async () => {
   const { root, env } = await makeRepo();
   await writeFile(path.join(root, 'stray.txt'), 'dirty\n');
@@ -451,6 +466,12 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
     })
   ].join('\n');
   assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 2399370, totalCostUsd: 1.4622195 });
+
+  const claudeCappedMidTurn = [
+    JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 100, output_tokens: 50 } } }),
+    JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 20, output_tokens: 10 } } })
+  ].join('\n');
+  assert.deepEqual(extractUsage('claude-code', claudeCappedMidTurn), { totalTokens: 180, totalCostUsd: null });
 
   const codex = [
     JSON.stringify({

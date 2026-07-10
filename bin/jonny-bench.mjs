@@ -494,12 +494,20 @@ export function extractUsage(cli, text) {
 
   if (cli === 'claude-code') {
     const final = events.findLast((event) => event.type === 'result' || Number.isFinite(event.total_cost_usd));
-    if (!final) return { totalTokens: null, totalCostUsd: null };
-    const usageTotal = claudeUsageTotal(final.usage ?? final.message?.usage);
-    return {
-      totalTokens: usageTotal > 0 ? usageTotal : null,
-      totalCostUsd: Number.isFinite(final.total_cost_usd) ? final.total_cost_usd : null
-    };
+    if (final) {
+      const usageTotal = claudeUsageTotal(final.usage ?? final.message?.usage);
+      return {
+        totalTokens: usageTotal > 0 ? usageTotal : null,
+        totalCostUsd: Number.isFinite(final.total_cost_usd) ? final.total_cost_usd : null
+      };
+    }
+    // No final result event (e.g. killed by the wall-clock cap mid-turn): best-effort
+    // total from summing each assistant turn's own usage. No total_cost_usd without
+    // the final event, so cost stays null.
+    const partialTotal = events
+      .filter((event) => event.type === 'assistant')
+      .reduce((sum, event) => sum + claudeUsageTotal(event.message?.usage), 0);
+    return { totalTokens: partialTotal > 0 ? partialTotal : null, totalCostUsd: null };
   }
 
   if (cli === 'codex') {
@@ -735,7 +743,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
       argv: metaArgv
     };
     const redactionState = await redactRunArtifacts(runDir);
-    if (!options.noScreenshot && status === 'ok') {
+    if (!options.noScreenshot && await pathExists(path.join(runDir, 'app', 'index.html'))) {
       await tryScreenshot(path.join(runDir, 'app'), path.join(runDir, 'screenshot.png'));
     }
     await writeMetaAfterLeakGate(runDir, meta, options, redactionState);

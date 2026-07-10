@@ -128,6 +128,16 @@
       ".gemini/oauth_creds.json",
       ".gemini/google_accounts.json"
     ],
+    "seedFiles": [
+      {
+        "from": "$HOME/.gemini/settings.json",
+        "pickKeys": [
+          "security"
+        ],
+        "extra": {},
+        "to": "$RUN_HOME/.gemini/settings.json"
+      }
+    ],
     "env": {
       "HOME": "$RUN_HOME"
     },
@@ -144,6 +154,6 @@
     "preCreateDirs": [
       "$RUN_HOME/.gemini"
     ],
-    "usage": "No reasoning-effort knob and no stable total-usage event was verified from Gemini stream-json in this environment; extraction records totalTokens and totalCostUsd as null and cli-output.jsonl remains the transcript fallback."
+    "usage": "No reasoning-effort knob and no stable total-usage event was verified from Gemini stream-json in this environment; extraction records totalTokens and totalCostUsd as null and cli-output.jsonl remains the transcript fallback. credsFiles alone aren't enough for oauth-personal auth: settings.json's security.auth.selectedType must also be seeded into RUN_HOME, or the CLI refuses to start."
   }
 }
