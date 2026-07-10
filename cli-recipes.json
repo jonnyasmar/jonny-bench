@@ -1,5 +1,5 @@
 {
-  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $EFFORT=reasoning effort from models.json or null, $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. If an argv element references $EFFORT and the model has no effort, that element and its preceding flag element are omitted. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $EFFORT=reasoning effort from models.json or null, $CAP_MINUTES=bench.capMinutes minus a 2-minute buffer, formatted like \"28m\" (for CLIs with their own internal wait timeout shorter than our wall-clock cap), $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. If an argv element references $EFFORT and the model has no effort, that element and its preceding flag element are omitted. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
   "claude-code": {
     "bin": "claude",
     "versionArgv": [
@@ -119,24 +119,13 @@
     ],
     "usage": "No stable total-usage event was verified from the Grok streaming-json probe in this environment; extraction records totalTokens and totalCostUsd as null until a real output shape is proven. reasoning effort is pinned with --reasoning-effort $EFFORT."
   },
-  "gemini": {
-    "bin": "gemini",
+  "agy": {
+    "bin": "agy",
     "versionArgv": [
       "--version"
     ],
     "credsFiles": [
-      ".gemini/oauth_creds.json",
-      ".gemini/google_accounts.json"
-    ],
-    "seedFiles": [
-      {
-        "from": "$HOME/.gemini/settings.json",
-        "pickKeys": [
-          "security"
-        ],
-        "extra": {},
-        "to": "$RUN_HOME/.gemini/settings.json"
-      }
+      ".gemini/antigravity-cli/antigravity-oauth-token"
     ],
     "env": {
       "HOME": "$RUN_HOME"
@@ -144,16 +133,17 @@
     "argv": [
       "-p",
       "$PROMPT",
-      "-m",
+      "--model",
       "$MODEL_ARG",
-      "-o",
-      "stream-json",
-      "-y"
+      "--dangerously-skip-permissions",
+      "--new-project",
+      "--print-timeout",
+      "$CAP_MINUTES"
     ],
-    "transcriptGlob": "",
+    "transcriptGlob": "$RUN_HOME/.gemini/antigravity-cli/log/*.log",
     "preCreateDirs": [
-      "$RUN_HOME/.gemini"
+      "$RUN_HOME/.gemini/antigravity-cli"
     ],
-    "usage": "No reasoning-effort knob and no stable total-usage event was verified from Gemini stream-json in this environment; extraction records totalTokens and totalCostUsd as null and cli-output.jsonl remains the transcript fallback. credsFiles alone aren't enough for oauth-personal auth: settings.json's security.auth.selectedType must also be seeded into RUN_HOME, or the CLI refuses to start."
+    "usage": "This is the Antigravity CLI (agy), not the plain `gemini` CLI: the classic Gemini CLI oauth-personal login is rejected with IneligibleTierError on this account (migrate-to-Antigravity), and agy is the working replacement for the same Gemini 3.1 Pro model. Effort tier has no separate flag -- it's baked into $MODEL_ARG itself (e.g. \"Gemini 3.1 Pro (High)\"). --new-project is required or agy silently writes output under $RUN_HOME/.gemini/antigravity-cli/scratch/ instead of $WORKDIR, and locateAppDir never finds it. --print-timeout must be passed explicitly: agy's own internal wait timeout defaults to 5m, well under our wall-clock cap, and would truncate a run before our own cap ever fires; $CAP_MINUTES is bench.capMinutes minus a 2-minute buffer. No JSON output format flag was found (verified via --help) -- stdout is plain text and cli.log is an unstructured Go operational log, so totalTokens/totalCostUsd record null, same as the prior gemini recipe."
   }
 }

@@ -6,5 +6,5 @@
   "gpt-5.6-sol": { "displayName": "GPT-5.6 Sol", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-sol", "effort": "high" },
   "gpt-5.6-terra": { "displayName": "GPT-5.6 Terra", "vendor": "OpenAI", "cli": "codex", "modelArg": "gpt-5.6-terra", "effort": "high" },
   "grok-4.5": { "displayName": "Grok 4.5", "vendor": "xAI", "cli": "grok", "modelArg": "grok-4.5", "effort": "high" },
-  "gemini-3.1-pro": { "displayName": "Gemini 3.1 Pro", "vendor": "Google", "cli": "gemini", "modelArg": "gemini-3.1-pro" }
+  "gemini-3.1-pro": { "displayName": "Gemini 3.1 Pro", "vendor": "Google", "cli": "agy", "modelArg": "Gemini 3.1 Pro (High)" }
 }

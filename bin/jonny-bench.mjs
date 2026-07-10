@@ -98,7 +98,7 @@ async function allocateRun(benchSlug, modelSlug) {
   }
 }
 
-function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId, effort = null }) {
+function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId, effort = null, capMinutes = null }) {
   const home = process.env.HOME || os.homedir();
   const user = process.env.USER || os.userInfo().username;
   return {
@@ -107,6 +107,12 @@ function buildVars({ runHome, workdir, runDir, modelArg, prompt, sessionId, effo
     RUN_DIR: runDir,
     MODEL_ARG: modelArg,
     EFFORT: effort,
+    // Some CLIs impose their own internal wait timeout (e.g. agy --print-timeout,
+    // default 5m) independent of our own wall-clock cap. Give recipes a
+    // same-unit value a couple minutes under our own cap so the CLI's own
+    // timeout never fires first and silently truncates a run our cap would
+    // have allowed to keep going.
+    CAP_MINUTES: Number.isFinite(capMinutes) ? `${Math.max(1, Math.floor(capMinutes) - 2)}m` : null,
     PROMPT: prompt,
     SESSION_ID: sessionId,
     HOME: home,
@@ -661,7 +667,8 @@ async function prepareRunHome(bench, modelSlug, model, recipe) {
     modelArg: model.modelArg || modelSlug,
     prompt: bench.prompt,
     sessionId,
-    effort: model.effort ?? null
+    effort: model.effort ?? null,
+    capMinutes: Number(bench.capMinutes)
   });
   try {
     await copyCreds(runHome, recipe.credsFiles);
@@ -684,7 +691,8 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     modelArg: model.modelArg || modelSlug,
     prompt: bench.prompt,
     sessionId,
-    effort: model.effort ?? null
+    effort: model.effort ?? null,
+    capMinutes: Number(bench.capMinutes)
   });
   let keepHomeNote = null;
   try {
