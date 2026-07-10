@@ -73,13 +73,25 @@ async function makeRepo({
   if (streamLeak) fakeEnv.FAKE_STREAM_LEAK = streamLeak;
   if (artifactLeak) fakeEnv.FAKE_ARTIFACT_LEAK = artifactLeak;
   if (appPathLeak) fakeEnv.FAKE_APP_PATH = '$HOME/private-project';
+  let fakeCliPath = fakeCli;
+  if (mode === 'error-with-app') {
+    fakeCliPath = path.join(root, 'error-with-app-cli.mjs');
+    await writeFile(fakeCliPath, `#!/usr/bin/env node
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+await mkdir(path.join(process.cwd(), 'dist'), { recursive: true });
+await writeFile(path.join(process.cwd(), 'dist', 'index.html'), '<!doctype html><title>fake bench app</title><h1>fake</h1>');
+process.exit(42);
+`);
+  }
   const fakeRecipe = {
     bin: recipeBin,
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
     argv: [
-      fakeCli,
+      fakeCliPath,
       ...(includeCapTimeout ? ['--timeout', '$CAP_MINUTES'] : []),
       '--model',
       '$MODEL_ARG',
@@ -471,6 +483,21 @@ test('wall-clock cap still publishes the app and a best-effort partial usage tot
   assert.equal(existsSync(path.join(runDir, 'app', 'index.html')), true);
   assert.equal(meta.totalTokens, 180);
   assert.equal(meta.totalCostUsd, null);
+  const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.benches[0].runs[0].appPath.endsWith('/app/index.html'), true);
+});
+
+test('error-exit runs record app artifacts that exist on disk', async () => {
+  const { root, env } = await makeRepo({ mode: 'error-with-app' });
+  const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
+  assert.equal(result.status, 0, result.stderr);
+  const runDir = await findRunDir(root);
+  const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
+  assert.equal(meta.exitReason, 'error');
+  assert.equal(meta.status, 'failed');
+  assert.equal(meta.appPath.endsWith('/app/index.html'), true);
+  assert.equal(meta.screenshotPath, null);
+  assert.equal(existsSync(path.join(runDir, 'app', 'index.html')), true);
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
   assert.equal(manifest.benches[0].runs[0].appPath.endsWith('/app/index.html'), true);
 });

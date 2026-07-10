@@ -11,6 +11,8 @@
   "totalCostUsd": null,
   "status": "failed",
   "exitReason": "error",
+  "appPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/app/index.html",
+  "screenshotPath": "benches/3d-gradius/runs/opus-4.8--20260710-0731/screenshot.png",
   "argv": [
     "-p",
     "--model",

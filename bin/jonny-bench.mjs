@@ -877,10 +877,20 @@ async function scanRunArtifacts(files, options) {
   }
 }
 
+async function runArtifactPaths(runDir) {
+  const relRun = path.relative(process.cwd(), runDir).replaceAll(path.sep, '/');
+  const appIndex = path.join(runDir, 'app', 'index.html');
+  const screenshot = path.join(runDir, 'screenshot.png');
+  return {
+    appPath: await pathExists(appIndex) ? `${relRun}/app/index.html` : null,
+    screenshotPath: await pathExists(screenshot) ? `${relRun}/screenshot.png` : null
+  };
+}
+
 async function writeMetaAfterLeakGate(runDir, meta, options, redactionState = null) {
   const state = redactionState || await redactRunArtifacts(runDir);
   await scanRunArtifacts(state.files, options);
-  await writeJson(path.join(runDir, 'meta.json'), { ...meta, redactions: state.redactions });
+  await writeJson(path.join(runDir, 'meta.json'), { ...meta, ...await runArtifactPaths(runDir), redactions: state.redactions });
   return state.redactions;
 }
 
