@@ -7,8 +7,14 @@
   "cliVersion": "codex-cli 0.144.0",
   "startedAt": "2026-07-10T07:23:37.219Z",
   "wallSeconds": 425,
-  "totalTokens": 581348,
+  "totalTokens": 584993,
   "totalCostUsd": null,
+  "estimatedCostUsd": 1.1734,
+  "usage": {
+    "inputTokens": 561054,
+    "cachedInputTokens": 522240,
+    "outputTokens": 23939
+  },
   "status": "ok",
   "exitReason": "completed",
   "argv": [

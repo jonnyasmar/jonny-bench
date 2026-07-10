@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T21:15:09.635Z",
+  "generatedAt": "2026-07-10T21:21:47.633Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -64,6 +64,8 @@
           ],
           "totalTokens": null,
           "totalCostUsd": null,
+          "estimatedCostUsd": null,
+          "usage": null,
           "status": "ok",
           "exitReason": "completed",
           "argv": [
@@ -169,6 +171,8 @@
           "wallSeconds": 352,
           "totalTokens": null,
           "totalCostUsd": null,
+          "estimatedCostUsd": null,
+          "usage": null,
           "status": "ok",
           "exitReason": "completed",
           "argv": [
@@ -201,8 +205,14 @@
           "cliVersion": "codex-cli 0.144.0",
           "startedAt": "2026-07-10T07:30:54.720Z",
           "wallSeconds": 155,
-          "totalTokens": 108660,
+          "totalTokens": 109457,
           "totalCostUsd": null,
+          "estimatedCostUsd": 0.1646,
+          "usage": {
+            "inputTokens": 101869,
+            "cachedInputTokens": 90624,
+            "outputTokens": 7588
+          },
           "status": "ok",
           "exitReason": "completed",
           "argv": [
@@ -242,8 +252,14 @@
           "cliVersion": "codex-cli 0.144.0",
           "startedAt": "2026-07-10T07:23:37.219Z",
           "wallSeconds": 425,
-          "totalTokens": 581348,
+          "totalTokens": 584993,
           "totalCostUsd": null,
+          "estimatedCostUsd": 1.1734,
+          "usage": {
+            "inputTokens": 561054,
+            "cachedInputTokens": 522240,
+            "outputTokens": 23939
+          },
           "status": "ok",
           "exitReason": "completed",
           "argv": [
@@ -284,8 +300,14 @@
           "cliVersion": "codex-cli 0.144.0",
           "startedAt": "2026-07-10T07:13:40.247Z",
           "wallSeconds": 591,
-          "totalTokens": 1001970,
+          "totalTokens": 1006632,
           "totalCostUsd": null,
+          "estimatedCostUsd": 1.5846,
+          "usage": {
+            "inputTokens": 976290,
+            "cachedInputTokens": 934912,
+            "outputTokens": 30342
+          },
           "status": "ok",
           "exitReason": "completed",
           "argv": [

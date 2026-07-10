@@ -550,7 +550,8 @@ export async function mergeTranscriptFiles(sourceFiles, outFile) {
 function codexUsageTotal(usage) {
   if (!usage || typeof usage !== 'object') return 0;
   return (Number.isFinite(usage.input_tokens) ? usage.input_tokens : 0)
-    + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0);
+    + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0)
+    + (Number.isFinite(usage.reasoning_output_tokens) ? usage.reasoning_output_tokens : 0);
 }
 
 function claudeUsageTotal(usage) {
@@ -559,6 +560,42 @@ function claudeUsageTotal(usage) {
     + (Number.isFinite(usage.cache_read_input_tokens) ? usage.cache_read_input_tokens : 0)
     + (Number.isFinite(usage.cache_creation_input_tokens) ? usage.cache_creation_input_tokens : 0)
     + (Number.isFinite(usage.output_tokens) ? usage.output_tokens : 0);
+}
+
+function usageBreakdown({ inputTokens = 0, cachedInputTokens = 0, outputTokens = 0 } = {}) {
+  const usage = { inputTokens, cachedInputTokens, outputTokens };
+  return Object.values(usage).some((value) => value > 0) ? usage : null;
+}
+
+function usageResult({ totalTokens = null, totalCostUsd = null, usage = null } = {}) {
+  return { totalTokens, totalCostUsd, usage };
+}
+
+async function readPrices() {
+  const file = repoPath('prices.json');
+  if (!(await pathExists(file))) return {};
+  const prices = await readJson(file);
+  delete prices._comment;
+  return prices;
+}
+
+export function estimateCostUsd(modelSlug, usage, totalCostUsd, prices) {
+  if (totalCostUsd !== null || !usage) return null;
+  const price = prices?.[modelSlug];
+  if (!price) return null;
+  for (const key of ['inputTokens', 'cachedInputTokens', 'outputTokens']) {
+    if (!Number.isFinite(usage[key])) return null;
+  }
+  if (!Number.isFinite(price.input) || !Number.isFinite(price.output)) return null;
+  const cachedInputPrice = price.cachedInput === null ? price.input : price.cachedInput;
+  if (!Number.isFinite(cachedInputPrice)) return null;
+  const uncachedInputTokens = usage.inputTokens - usage.cachedInputTokens;
+  const cost = (
+    uncachedInputTokens * price.input
+    + usage.cachedInputTokens * cachedInputPrice
+    + usage.outputTokens * price.output
+  ) / 1_000_000;
+  return Math.round(cost * 10_000) / 10_000;
 }
 
 function unwrapStreamEvents(events) {
@@ -583,16 +620,16 @@ function unwrapStreamEvents(events) {
 
 export function extractUsage(cli, text) {
   const events = unwrapStreamEvents(parseJsonLines(text));
-  if (!events.length) return { totalTokens: null, totalCostUsd: null };
+  if (!events.length) return usageResult();
 
   if (cli === 'claude-code') {
     const final = events.findLast((event) => event.type === 'result' || Number.isFinite(event.total_cost_usd));
     if (final) {
       const usageTotal = claudeUsageTotal(final.usage ?? final.message?.usage);
-      return {
+      return usageResult({
         totalTokens: usageTotal > 0 ? usageTotal : null,
         totalCostUsd: Number.isFinite(final.total_cost_usd) ? final.total_cost_usd : null
-      };
+      });
     }
     // No final result event (e.g. killed by the wall-clock cap mid-turn): best-effort
     // total from summing each assistant turn's own usage. No total_cost_usd without
@@ -600,7 +637,7 @@ export function extractUsage(cli, text) {
     const partialTotal = events
       .filter((event) => event.type === 'assistant')
       .reduce((sum, event) => sum + claudeUsageTotal(event.message?.usage), 0);
-    return { totalTokens: partialTotal > 0 ? partialTotal : null, totalCostUsd: null };
+    return usageResult({ totalTokens: partialTotal > 0 ? partialTotal : null });
   }
 
   if (cli === 'codex') {
@@ -608,26 +645,36 @@ export function extractUsage(cli, text) {
       return (event.type === 'turn.completed' && event.usage)
         || (event.payload?.type === 'token_count' && event.payload?.info?.total_token_usage);
     });
-    const usageTotal = final?.payload?.type === 'token_count'
-      ? final.payload.info.total_token_usage.total_tokens
-      : codexUsageTotal(final?.usage);
-    return { totalTokens: usageTotal > 0 ? usageTotal : null, totalCostUsd: null };
+    const rawUsage = final?.payload?.type === 'token_count'
+      ? final.payload.info.total_token_usage
+      : final?.usage;
+    const usage = usageBreakdown({
+      inputTokens: Number.isFinite(rawUsage?.input_tokens) ? rawUsage.input_tokens : 0,
+      cachedInputTokens: Number.isFinite(rawUsage?.cached_input_tokens) ? rawUsage.cached_input_tokens : 0,
+      outputTokens: (Number.isFinite(rawUsage?.output_tokens) ? rawUsage.output_tokens : 0)
+        + (Number.isFinite(rawUsage?.reasoning_output_tokens) ? rawUsage.reasoning_output_tokens : 0)
+    });
+    const usageTotal = usage ? usage.inputTokens + usage.outputTokens : codexUsageTotal(rawUsage);
+    return usageResult({ totalTokens: usageTotal > 0 ? usageTotal : null, usage });
   }
 
   if (cli === 'grok') {
-    const usageTotal = events
+    const usage = events
       .filter((event) => event.msg === 'shell.turn.inference_done' && event.ctx)
       .reduce((sum, event) => {
         const ctx = event.ctx;
-        return sum
-          + (Number.isFinite(ctx.prompt_tokens) ? ctx.prompt_tokens : 0)
-          + (Number.isFinite(ctx.completion_tokens) ? ctx.completion_tokens : 0)
+        sum.inputTokens += Number.isFinite(ctx.prompt_tokens) ? ctx.prompt_tokens : 0;
+        sum.cachedInputTokens += Number.isFinite(ctx.cached_prompt_tokens) ? ctx.cached_prompt_tokens : 0;
+        sum.outputTokens += (Number.isFinite(ctx.completion_tokens) ? ctx.completion_tokens : 0)
           + (Number.isFinite(ctx.reasoning_tokens) ? ctx.reasoning_tokens : 0);
-      }, 0);
-    return { totalTokens: usageTotal > 0 ? usageTotal : null, totalCostUsd: null };
+        return sum;
+      }, { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 });
+    const normalizedUsage = usageBreakdown(usage);
+    const usageTotal = normalizedUsage ? normalizedUsage.inputTokens + normalizedUsage.outputTokens : 0;
+    return usageResult({ totalTokens: usageTotal > 0 ? usageTotal : null, usage: normalizedUsage });
   }
 
-  return { totalTokens: null, totalCostUsd: null };
+  return usageResult();
 }
 
 async function copyTranscript(recipe, vars, runDir) {
@@ -760,6 +807,8 @@ async function writeDryRun(bench, modelSlug, model, runId, runDir, options) {
     wallSeconds: 0,
     totalTokens: 0,
     totalCostUsd: 0,
+    estimatedCostUsd: null,
+    usage: null,
     status: 'ok',
     exitReason: 'completed',
     argv: [],
@@ -857,6 +906,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     const transcriptPath = await copyTranscript(recipe, vars, runDir);
     const usageText = await readUsageLogSource(recipe, vars) || await readUsageSource(transcriptPath, result.outputFile);
     const usage = extractUsage(model.cli, usageText);
+    const prices = await readPrices();
     const meta = {
       runId,
       bench: bench.slug,
@@ -869,6 +919,8 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
       rootAbsolutePaths,
       totalTokens: usage.totalTokens,
       totalCostUsd: usage.totalCostUsd,
+      estimatedCostUsd: estimateCostUsd(modelSlug, usage.usage, usage.totalCostUsd, prices),
+      usage: usage.usage,
       status,
       exitReason,
       argv: metaArgv
@@ -1188,6 +1240,18 @@ export async function validateManifest(manifest = null) {
       if (!Number.isFinite(run.wallSeconds)) errors.push(`${runPrefix}.wallSeconds must be number`);
       if (run.totalTokens !== null && !Number.isFinite(run.totalTokens)) errors.push(`${runPrefix}.totalTokens must be number|null`);
       if (run.totalCostUsd !== null && !Number.isFinite(run.totalCostUsd)) errors.push(`${runPrefix}.totalCostUsd must be number|null`);
+      if (run.estimatedCostUsd !== undefined && run.estimatedCostUsd !== null && !Number.isFinite(run.estimatedCostUsd)) {
+        errors.push(`${runPrefix}.estimatedCostUsd must be an optional number|null`);
+      }
+      if (run.usage !== undefined && run.usage !== null) {
+        if (typeof run.usage !== 'object' || Array.isArray(run.usage)) {
+          errors.push(`${runPrefix}.usage must be an optional object|null`);
+        } else {
+          for (const key of ['inputTokens', 'cachedInputTokens', 'outputTokens']) {
+            if (!Number.isFinite(run.usage[key])) errors.push(`${runPrefix}.usage.${key} must be number`);
+          }
+        }
+      }
       if (run.effort !== undefined && run.effort !== null && typeof run.effort !== 'string') {
         errors.push(`${runPrefix}.effort must be an optional string|null`);
       }

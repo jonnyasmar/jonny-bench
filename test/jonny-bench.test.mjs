@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, extractUsage, mergeTranscriptFiles } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, estimateCostUsd, extractUsage, mergeTranscriptFiles } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -597,6 +597,40 @@ test('mergeTranscriptFiles interleaves JSONL sources by timestamp', async () => 
   ]);
 });
 
+test('estimateCostUsd uses list prices only without real cost', () => {
+  const prices = {
+    'gpt-5.5': { input: 5, cachedInput: 0.5, output: 30 },
+    'gpt-5.6-sol': { input: 5, cachedInput: 0.5, output: 30 },
+    'gpt-5.6-terra': { input: 2.5, cachedInput: 0.25, output: 15 },
+    'grok-4.5': { input: 2, cachedInput: 0.5, output: 6 },
+    'gemini-3.1-pro': { input: 2, cachedInput: null, output: 12 }
+  };
+  const usage = { inputTokens: 1_000_000, cachedInputTokens: 200_000, outputTokens: 100_000 };
+  assert.equal(estimateCostUsd('gpt-5.5', usage, null, prices), 7.1);
+  assert.equal(estimateCostUsd('gpt-5.6-sol', usage, null, prices), 7.1);
+  assert.equal(estimateCostUsd('gpt-5.6-terra', usage, null, prices), 3.55);
+  assert.equal(estimateCostUsd('grok-4.5', usage, null, prices), 2.3);
+  assert.equal(estimateCostUsd('gemini-3.1-pro', usage, null, prices), 3.2);
+  assert.equal(
+    estimateCostUsd(
+      'gpt-5.6-terra',
+      usage,
+      0.12,
+      prices
+    ),
+    null
+  );
+  assert.equal(
+    estimateCostUsd(
+      'no-price',
+      usage,
+      null,
+      prices
+    ),
+    null
+  );
+});
+
 test('usage extraction supports claude, codex, and absent usage shapes', () => {
   const claude = [
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 3, output_tokens: 4 } } }),
@@ -612,13 +646,13 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
       }
     })
   ].join('\n');
-  assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 2399370, totalCostUsd: 1.4622195 });
+  assert.deepEqual(extractUsage('claude-code', claude), { totalTokens: 2399370, totalCostUsd: 1.4622195, usage: null });
 
   const claudeCappedMidTurn = [
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 100, output_tokens: 50 } } }),
     JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 20, output_tokens: 10 } } })
   ].join('\n');
-  assert.deepEqual(extractUsage('claude-code', claudeCappedMidTurn), { totalTokens: 180, totalCostUsd: null });
+  assert.deepEqual(extractUsage('claude-code', claudeCappedMidTurn), { totalTokens: 180, totalCostUsd: null, usage: null });
 
   const codex = [
     JSON.stringify({
@@ -633,13 +667,21 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
     }),
     JSON.stringify({ ts: '2026-07-09T18:35:03.000Z', stream: 'stderr', text: 'ignored\n' })
   ].join('\n');
-  assert.deepEqual(extractUsage('codex', codex), { totalTokens: 30, totalCostUsd: null });
+  assert.deepEqual(extractUsage('codex', codex), {
+    totalTokens: 41,
+    totalCostUsd: null,
+    usage: { inputTokens: 10, cachedInputTokens: 9, outputTokens: 31 }
+  });
 
   const rollout = [
     JSON.stringify({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 } } } }),
     JSON.stringify({ type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 20, output_tokens: 6, total_tokens: 26 } } } })
   ].join('\n');
-  assert.deepEqual(extractUsage('codex', rollout), { totalTokens: 26, totalCostUsd: null });
+  assert.deepEqual(extractUsage('codex', rollout), {
+    totalTokens: 26,
+    totalCostUsd: null,
+    usage: { inputTokens: 20, cachedInputTokens: 0, outputTokens: 6 }
+  });
 
   const realCodexRolloutExcerpt = [
     JSON.stringify({ type: 'event_msg', payload: { type: 'agent_message', phase: 'final_answer' } }),
@@ -660,7 +702,11 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
     }),
     JSON.stringify({ type: 'event_msg', payload: { type: 'task_complete' } })
   ].join('\n');
-  assert.equal(extractUsage('codex', realCodexRolloutExcerpt).totalTokens, 433360);
+  assert.deepEqual(extractUsage('codex', realCodexRolloutExcerpt), {
+    totalTokens: 435237,
+    totalCostUsd: null,
+    usage: { inputTokens: 419579, cachedInputTokens: 395008, outputTokens: 15658 }
+  });
 
   const grokUnifiedLog = [
     JSON.stringify({
@@ -706,6 +752,10 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
       }
     })
   ].join('\n');
-  assert.deepEqual(extractUsage('grok', grokUnifiedLog), { totalTokens: 125527, totalCostUsd: null });
-  assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null });
+  assert.deepEqual(extractUsage('grok', grokUnifiedLog), {
+    totalTokens: 125527,
+    totalCostUsd: null,
+    usage: { inputTokens: 124716, cachedInputTokens: 84224, outputTokens: 811 }
+  });
+  assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null, usage: null });
 });

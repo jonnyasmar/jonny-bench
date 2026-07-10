@@ -16,6 +16,8 @@
   ],
   "totalTokens": null,
   "totalCostUsd": null,
+  "estimatedCostUsd": null,
+  "usage": null,
   "status": "ok",
   "exitReason": "completed",
   "argv": [

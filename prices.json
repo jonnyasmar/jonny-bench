@@ -1,0 +1,8 @@
+{
+  "_comment": "published API list prices, July 2026; estimates apply to subscription/unmetered runs",
+  "gpt-5.5": { "input": 5.00, "cachedInput": 0.50, "output": 30.00 },
+  "gpt-5.6-sol": { "input": 5.00, "cachedInput": 0.50, "output": 30.00 },
+  "gpt-5.6-terra": { "input": 2.50, "cachedInput": 0.25, "output": 15.00 },
+  "grok-4.5": { "input": 2.00, "cachedInput": 0.50, "output": 6.00 },
+  "gemini-3.1-pro": { "input": 2.00, "cachedInput": null, "output": 12.00 }
+}
