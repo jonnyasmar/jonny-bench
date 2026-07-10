@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtemp, mkdir, readdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, estimateCostUsd, extractUsage, mergeTranscriptFiles } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, createMeterTempState, detectRootAbsoluteAssetPaths, estimateCostUsd, extractUsage, mergeTranscriptFiles, parseMeterOut } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -629,6 +629,81 @@ test('estimateCostUsd uses list prices only without real cost', () => {
     ),
     null
   );
+});
+
+test('parseMeterOut takes the last usageMetadata per response and estimates gemini cost', () => {
+  const meterOut = [
+    JSON.stringify({
+      responseId: 'resp-1',
+      usageMetadata: {
+        promptTokenCount: 10,
+        cachedContentTokenCount: 2,
+        candidatesTokenCount: 3,
+        thoughtsTokenCount: 4,
+        totalTokenCount: 17
+      }
+    }),
+    JSON.stringify({
+      responseId: 'resp-1',
+      usageMetadata: {
+        promptTokenCount: 1_000_000,
+        cachedContentTokenCount: 200_000,
+        candidatesTokenCount: 100_000,
+        thoughtsTokenCount: 50_000,
+        totalTokenCount: 1_150_000
+      }
+    }),
+    JSON.stringify({
+      responseId: 'resp-2',
+      usageMetadata: {
+        promptTokenCount: 500_000,
+        candidatesTokenCount: 50_000,
+        thoughtsTokenCount: 25_000,
+        totalTokenCount: 575_000
+      }
+    })
+  ].join('\n');
+  const parsed = parseMeterOut(meterOut);
+  assert.deepEqual(parsed, {
+    totalTokens: 1_725_000,
+    totalCostUsd: null,
+    usage: {
+      inputTokens: 1_500_000,
+      cachedInputTokens: 200_000,
+      outputTokens: 225_000
+    }
+  });
+  assert.equal(
+    estimateCostUsd(
+      'gemini-3.1-pro',
+      parsed.usage,
+      parsed.totalCostUsd,
+      { 'gemini-3.1-pro': { input: 2, cachedInput: null, output: 12 } }
+    ),
+    5.7
+  );
+});
+
+test('metering temp files are created outside the run directory', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-meter-test-'));
+  const runDir = path.join(root, 'benches', 'tiny', 'runs', 'gemini-3.1-pro--meter');
+  await mkdir(runDir, { recursive: true });
+  const state = await createMeterTempState();
+  try {
+    await writeFile(state.meterOut, `${JSON.stringify({
+      responseId: 'resp',
+      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 }
+    })}\n`);
+    for (const file of [state.confdir, state.meterOut]) {
+      assert.equal(file.startsWith(`${runDir}${path.sep}`), false, file);
+      assert.equal(file === runDir, false, file);
+    }
+    assert.deepEqual(await listFiles(runDir), []);
+  } finally {
+    await rm(state.confdir, { recursive: true, force: true });
+    await rm(state.meterOut, { force: true });
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test('usage extraction supports claude, codex, and absent usage shapes', () => {

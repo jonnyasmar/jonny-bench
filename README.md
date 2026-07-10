@@ -23,6 +23,8 @@ Bench runs execute as your normal OS user. The runner strips agent env/config an
 
 Before publishing, jonny-bench mechanically redacts real home paths in text artifacts to `/Users/redacted`, then scans the run output for common secrets, private keys, JWTs, non-allowlisted emails, and remaining real-home paths. A finding blocks publish before `git add`; `--allow-leaks` exists for intentional overrides and prints a warning.
 
+Optional Gemini/Antigravity token metering requires mitmproxy (`brew install mitmproxy`). When enabled, the runner starts `mitmdump` with its config directory and counts output under the OS temp directory, never under a run dir or the repo. The addon persists only numeric `usageMetadata` token counters; raw HTTPS flows, headers, and Bearer tokens are not written and the temp files are removed after the run.
+
 Published submissions stay unmodified. The `/embed/` harness is only a viewer wrapper for sandboxed iframes: it validates a repo-local `benches/<slug>/runs/<runId>/app/` target, loads that app in-place, and provides per-load in-memory `localStorage`/`sessionStorage` only when the browser blocks native storage for an opaque origin.
 
 The roadmap answer for stronger isolation is a separate OS user or container. The current leak gate is a pre-publish safety net, not a filesystem security boundary.

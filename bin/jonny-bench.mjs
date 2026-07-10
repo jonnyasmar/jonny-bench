@@ -5,6 +5,7 @@ import { createServer } from 'node:http';
 import { createReadStream } from 'node:fs';
 import { access, chmod, copyFile, cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { constants as fsConstants, createWriteStream, existsSync } from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -199,7 +200,7 @@ function minimalChildPath(resolvedBin) {
   return [...new Set(parts.filter(Boolean))].join(path.delimiter);
 }
 
-function buildChildEnv(recipeEnv, vars, childPath) {
+function buildChildEnv(recipeEnv, vars, childPath, extraEnv = {}) {
   const env = {};
   for (const key of ALLOWLIST_ENV) {
     if (key !== 'PATH' && process.env[key] !== undefined) env[key] = process.env[key];
@@ -207,6 +208,7 @@ function buildChildEnv(recipeEnv, vars, childPath) {
   for (const [key, value] of Object.entries(recipeEnv || {})) {
     env[key] = substitute(value, vars);
   }
+  for (const [key, value] of Object.entries(extraEnv)) env[key] = value;
   env.PATH = childPath;
   return env;
 }
@@ -598,6 +600,34 @@ export function estimateCostUsd(modelSlug, usage, totalCostUsd, prices) {
   return Math.round(cost * 10_000) / 10_000;
 }
 
+function numeric(value) {
+  return Number.isFinite(value) ? value : 0;
+}
+
+export function parseMeterOut(text) {
+  const byResponse = new Map();
+  for (const event of parseJsonLines(text)) {
+    if (!event || typeof event !== 'object') continue;
+    if (typeof event.responseId !== 'string' || !event.responseId) continue;
+    const metadata = event.usageMetadata;
+    if (!metadata || typeof metadata !== 'object') continue;
+    byResponse.set(event.responseId, metadata);
+  }
+  const usage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
+  let totalTokens = 0;
+  for (const metadata of byResponse.values()) {
+    usage.inputTokens += numeric(metadata.promptTokenCount);
+    usage.cachedInputTokens += numeric(metadata.cachedContentTokenCount);
+    usage.outputTokens += numeric(metadata.candidatesTokenCount) + numeric(metadata.thoughtsTokenCount);
+    totalTokens += numeric(metadata.totalTokenCount);
+  }
+  const normalizedUsage = usageBreakdown(usage);
+  return usageResult({
+    totalTokens: totalTokens > 0 ? totalTokens : null,
+    usage: normalizedUsage
+  });
+}
+
 function unwrapStreamEvents(events) {
   const unwrapped = [];
   let stdoutText = '';
@@ -710,6 +740,123 @@ async function readUsageLogSource(recipe, vars) {
   const match = await newestGlobMatch(substitute(recipe.usageLogGlob, vars));
   if (!match) return '';
   return readFile(match, 'utf8');
+}
+
+export async function createMeterTempState() {
+  const confdir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-meter-conf-'));
+  return {
+    confdir,
+    meterOut: path.join(os.tmpdir(), `jonny-bench-meter-${randomUUID()}.jsonl`)
+  };
+}
+
+async function reserveEphemeralPort() {
+  const server = net.createServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const { port } = server.address();
+  await new Promise((resolve) => server.close(resolve));
+  return port;
+}
+
+function canConnect(port) {
+  return new Promise((resolve) => {
+    const socket = net.connect({ host: '127.0.0.1', port });
+    socket.setTimeout(250);
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('error', () => resolve(false));
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+  });
+}
+
+async function waitForMeterReady({ caPath, port }, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await pathExists(caPath) && await canConnect(port)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
+
+async function cleanupMeterProxy(meter) {
+  if (!meter) return;
+  if (meter.child && meter.child.exitCode === null && meter.child.signalCode === null) {
+    meter.child.kill('SIGTERM');
+    await Promise.race([
+      new Promise((resolve) => meter.child.once('close', resolve)),
+      new Promise((resolve) => setTimeout(resolve, 1_000))
+    ]);
+    if (meter.child.exitCode === null && meter.child.signalCode === null) meter.child.kill('SIGKILL');
+  }
+  await rm(meter.confdir, { recursive: true, force: true });
+  await rm(meter.meterOut, { force: true });
+}
+
+async function maybeStartMeterProxy(recipe) {
+  if (!recipe.meterProxy) return null;
+  const mitmdump = await resolveBin('mitmdump');
+  if (!mitmdump) {
+    console.error('Metering skipped: mitmdump not found on PATH; token counts remain null.');
+    return null;
+  }
+  const endpointMatch = recipe.meterProxy.endpointMatch;
+  if (!endpointMatch) {
+    console.error('Metering skipped: meterProxy.endpointMatch is missing; token counts remain null.');
+    return null;
+  }
+  const meter = await createMeterTempState();
+  meter.port = await reserveEphemeralPort();
+  meter.caPath = path.join(meter.confdir, 'mitmproxy-ca-cert.pem');
+  const env = {
+    PATH: process.env.PATH || '',
+    LANG: process.env.LANG || 'C.UTF-8',
+    LC_ALL: process.env.LC_ALL || 'C',
+    METER_ENDPOINT_MATCH: endpointMatch,
+    METER_OUT: meter.meterOut
+  };
+  meter.child = spawn(mitmdump, [
+    '-q',
+    '-p',
+    String(meter.port),
+    '--set',
+    `confdir=${meter.confdir}`,
+    '-s',
+    repoPath('scripts', 'meter-addon.py')
+  ], { cwd: process.cwd(), env, shell: false, stdio: 'ignore' });
+  meter.child.on('error', () => {});
+  const ready = await waitForMeterReady(meter);
+  if (!ready) {
+    console.error('Metering skipped: mitmdump did not become ready; token counts remain null.');
+    await cleanupMeterProxy(meter);
+    return null;
+  }
+  const proxyUrl = `http://127.0.0.1:${meter.port}`;
+  meter.childEnv = {
+    HTTPS_PROXY: proxyUrl,
+    HTTP_PROXY: proxyUrl,
+    SSL_CERT_FILE: meter.caPath,
+    NODE_EXTRA_CA_CERTS: meter.caPath,
+    CACERT_PATH: meter.caPath
+  };
+  return meter;
+}
+
+async function finishMeterProxy(meter) {
+  if (!meter) return usageResult();
+  let text = '';
+  if (await pathExists(meter.meterOut)) text = await readFile(meter.meterOut, 'utf8');
+  const usage = parseMeterOut(text);
+  await cleanupMeterProxy(meter);
+  if (!usage.usage) console.error('Metering produced no usage records; token counts remain null.');
+  return usage;
 }
 
 function assertRunHomeTarget(file, runHome, label) {
@@ -864,25 +1011,30 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     capMinutes: Number(bench.capMinutes)
   });
   let keepHomeNote = null;
+  let meter = null;
   try {
     for (const dir of recipe.preCreateDirs || []) await mkdir(substitute(dir, vars), { recursive: true });
     await initWorkdir(workdir);
 
-    const env = buildChildEnv(recipe.env, vars, preflightInfo.childPath);
-    const cliVersion = await runVersion(recipe, preflightInfo.binPath, env, workdir);
+    const baseEnv = buildChildEnv(recipe.env, vars, preflightInfo.childPath);
+    const cliVersion = await runVersion(recipe, preflightInfo.binPath, baseEnv, workdir);
     const recipeArgv = recipe.argv || [];
     const { argv, metaArgv } = buildSpawnArgvWithMeta(recipeArgv, vars);
     const startedAt = new Date().toISOString();
+    meter = await maybeStartMeterProxy(recipe);
+    const env = buildChildEnv(recipe.env, vars, preflightInfo.childPath, meter?.childEnv || {});
     const result = await runStreaming(preflightInfo.binPath, argv, {
       cwd: workdir,
       env,
       runDir,
       capMs: Number(bench.capMinutes) * 60 * 1000
     });
+    const meterUsage = await finishMeterProxy(meter);
+    meter = null;
 
     let appDir = await locateAppDir(workdir);
     if (!appDir && await hasBuildScript(workdir)) {
-      await maybeBuild(workdir, env);
+      await maybeBuild(workdir, baseEnv);
       appDir = await locateAppDir(workdir);
     }
 
@@ -905,7 +1057,8 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
 
     const transcriptPath = await copyTranscript(recipe, vars, runDir);
     const usageText = await readUsageLogSource(recipe, vars) || await readUsageSource(transcriptPath, result.outputFile);
-    const usage = extractUsage(model.cli, usageText);
+    const artifactUsage = extractUsage(model.cli, usageText);
+    const usage = meterUsage.usage ? meterUsage : artifactUsage;
     const prices = await readPrices();
     const meta = {
       runId,
@@ -933,6 +1086,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     await writeMetaAfterLeakGate(runDir, meta, options, redactionState);
     return meta;
   } finally {
+    await cleanupMeterProxy(meter);
     await rm(workdir, { recursive: true, force: true });
     if (options.keepHome) keepHomeNote = runHome;
     else await rm(runHome, { recursive: true, force: true });
