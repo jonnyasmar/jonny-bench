@@ -1,5 +1,5 @@
 {
-  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=goal body, $SESSION_ID=uuid, $USER=real user. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
+  "_comment": "Consumed by bin/jonny-bench.mjs. $RUN_HOME=temp home, $WORKDIR=temp project dir, $RUN_DIR=results dir, $MODEL_ARG from models.json, $PROMPT=bench body, $SESSION_ID=uuid, $USER=real user. credsFiles are copied from the real ~ into $RUN_HOME (0600). authExec writes stdout to writeTo (0600). seedFiles copies selected JSON keys plus extras (0600). env REPLACES the environment (runner adds PATH/TERM/LANG/LC_ALL allowlist only).",
   "claude-code": {
     "bin": "claude",
     "versionArgv": [
@@ -44,7 +44,7 @@
       "--dangerously-skip-permissions",
       "--session-id",
       "$SESSION_ID",
-      "/goal $PROMPT"
+      "$PROMPT"
     ],
     "transcriptGlob": "$RUN_HOME/.claude/projects/*/$SESSION_ID.jsonl",
     "preCreateDirs": [],

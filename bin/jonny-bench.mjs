@@ -18,7 +18,7 @@ const BASE_CHILD_PATH = ['/usr/bin', '/bin', '/usr/sbin', '/sbin', '/usr/local/b
 
 function usage(exitCode = 1) {
   const text = `Usage:
-  jonny-bench run <goal> --model <slug> [--dry-run] [--no-push] [--keep-home] [--no-screenshot] [--allow-leaks]
+  jonny-bench run <bench> --model <slug> [--dry-run] [--no-push] [--keep-home] [--no-screenshot] [--allow-leaks]
   jonny-bench run --all --model <slug> [...]
   jonny-bench list
   jonny-bench regen [--no-push] [--no-commit]`;
@@ -69,8 +69,8 @@ function parseFrontmatter(source, file) {
   return { data, body: match[2] };
 }
 
-export async function loadGoal(slug) {
-  const file = repoPath('goals', slug, 'goal.md');
+export async function loadBench(slug) {
+  const file = repoPath('benches', slug, 'bench.md');
   const parsed = parseFrontmatter(await readFile(file, 'utf8'), file);
   for (const key of ['slug', 'title', 'capMinutes']) {
     if (parsed.data[key] === undefined) throw new Error(`${file} missing ${key}`);
@@ -84,9 +84,9 @@ function formatLocalRunStamp(date = new Date()) {
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
 }
 
-async function allocateRun(goalSlug, modelSlug) {
+async function allocateRun(benchSlug, modelSlug) {
   const base = `${modelSlug}--${formatLocalRunStamp()}`;
-  const runsRoot = repoPath('goals', goalSlug, 'runs');
+  const runsRoot = repoPath('benches', benchSlug, 'runs');
   await mkdir(runsRoot, { recursive: true });
   for (let i = 1; ; i += 1) {
     const runId = i === 1 ? base : `${base}-${i}`;
@@ -192,7 +192,7 @@ function porcelainPath(line) {
 }
 
 function allowedDirtyPath(file) {
-  return file === 'manifest.json' || /^goals\/[^/]+\/runs\//.test(file);
+  return file === 'manifest.json' || /^benches\/[^/]+\/runs\//.test(file);
 }
 
 async function assertCleanForPublish() {
@@ -204,7 +204,7 @@ async function assertCleanForPublish() {
     .map(porcelainPath)
     .filter((file) => !allowedDirtyPath(file));
   if (offenders.length) {
-    throw new Error(`Refusing to publish with dirty files outside goals/*/runs/ and manifest.json: ${offenders.join(', ')}`);
+    throw new Error(`Refusing to publish with dirty files outside benches/*/runs/ and manifest.json: ${offenders.join(', ')}`);
   }
 }
 
@@ -569,18 +569,18 @@ async function runVersion(recipe, binPath, env, cwd) {
   return line || null;
 }
 
-async function writeDryRun(goal, modelSlug, model, runId, runDir, options) {
+async function writeDryRun(bench, modelSlug, model, runId, runDir, options) {
   await mkdir(path.join(runDir, 'app'), { recursive: true });
   await writeFile(path.join(runDir, 'app', 'index.html'), `<!doctype html>
 <meta charset="utf-8">
-<title>${escapeHtml(goal.title)} dry run</title>
-<h1>${escapeHtml(goal.title)} dry run</h1>
+<title>${escapeHtml(bench.title)} dry run</title>
+<h1>${escapeHtml(bench.title)} dry run</h1>
 <p>jonny-bench fixture output.</p>
 `);
   await writeFile(path.join(runDir, 'transcript.jsonl'), `${JSON.stringify({ type: 'dry-run', model: modelSlug })}\n`);
   const meta = {
     runId,
-    goal: goal.slug,
+    bench: bench.slug,
     model: modelSlug,
     cli: model.cli,
     cliVersion: null,
@@ -605,7 +605,7 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;');
 }
 
-async function prepareRunHome(goal, modelSlug, model, recipe) {
+async function prepareRunHome(bench, modelSlug, model, recipe) {
   const runHome = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-home-'));
   const sessionId = randomUUID();
   const vars = buildVars({
@@ -613,7 +613,7 @@ async function prepareRunHome(goal, modelSlug, model, recipe) {
     workdir: '',
     runDir: '',
     modelArg: model.modelArg || modelSlug,
-    prompt: goal.prompt,
+    prompt: bench.prompt,
     sessionId
   });
   try {
@@ -627,7 +627,7 @@ async function prepareRunHome(goal, modelSlug, model, recipe) {
   }
 }
 
-async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo) {
+async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo) {
   const { runHome, sessionId } = prepared;
   const workdir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-work-'));
   const vars = buildVars({
@@ -635,7 +635,7 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
     workdir,
     runDir,
     modelArg: model.modelArg || modelSlug,
-    prompt: goal.prompt,
+    prompt: bench.prompt,
     sessionId
   });
   let keepHomeNote = null;
@@ -653,7 +653,7 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
       cwd: workdir,
       env,
       runDir,
-      capMs: Number(goal.capMinutes) * 60 * 1000
+      capMs: Number(bench.capMinutes) * 60 * 1000
     });
 
     let appDir = await locateAppDir(workdir);
@@ -682,7 +682,7 @@ async function runReal(goal, modelSlug, model, recipe, runId, runDir, options, p
     const usage = extractUsage(model.cli, usageText);
     const meta = {
       runId,
-      goal: goal.slug,
+      bench: bench.slug,
       model: modelSlug,
       cli: model.cli,
       cliVersion,
@@ -784,11 +784,11 @@ async function writeMetaAfterLeakGate(runDir, meta, options, redactionState = nu
   return state.redactions;
 }
 
-async function gitAddCommitPush(goalSlug, modelSlug, runId, runDir, noPush) {
+async function gitAddCommitPush(benchSlug, modelSlug, runId, runDir, noPush) {
   const relRunDir = path.relative(process.cwd(), runDir);
   let result = await runCapture('git', ['add', relRunDir, 'manifest.json'], { cwd: process.cwd(), env: process.env, timeoutMs: 30_000 });
   if (result.code !== 0) throw new Error(`git add failed: ${result.stderr.trim()}`);
-  result = await runCapture('git', ['commit', '-m', `bench: ${goalSlug} on ${modelSlug} (${runId})`], {
+  result = await runCapture('git', ['commit', '-m', `bench: ${benchSlug} on ${modelSlug} (${runId})`], {
     cwd: process.cwd(),
     env: process.env,
     timeoutMs: 30_000
@@ -800,8 +800,8 @@ async function gitAddCommitPush(goalSlug, modelSlug, runId, runDir, noPush) {
   }
 }
 
-async function runOne(goalSlug, modelSlug, options) {
-  const goal = await loadGoal(goalSlug);
+async function runOne(benchSlug, modelSlug, options) {
+  const bench = await loadBench(benchSlug);
   const models = await readJson(repoPath('models.json'));
   const recipes = await readJson(repoPath('cli-recipes.json'));
   const model = models[modelSlug];
@@ -813,45 +813,45 @@ async function runOne(goalSlug, modelSlug, options) {
   let runId;
   let runDir;
   try {
-    if (!options.dryRun) prepared = await prepareRunHome(goal, modelSlug, model, recipe);
-    ({ runId, runDir } = await allocateRun(goal.slug, modelSlug));
+    if (!options.dryRun) prepared = await prepareRunHome(bench, modelSlug, model, recipe);
+    ({ runId, runDir } = await allocateRun(bench.slug, modelSlug));
   } catch (error) {
     if (prepared) await rm(prepared.runHome, { recursive: true, force: true });
     throw error;
   }
 
-  if (options.dryRun) await writeDryRun(goal, modelSlug, model, runId, runDir, options);
-  else await runReal(goal, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo);
+  if (options.dryRun) await writeDryRun(bench, modelSlug, model, runId, runDir, options);
+  else await runReal(bench, modelSlug, model, recipe, runId, runDir, options, prepared, preflightInfo);
 
   const manifest = await regenerateManifest();
   await validateManifest(manifest);
-  if (!options.dryRun) await gitAddCommitPush(goal.slug, modelSlug, runId, runDir, options.noPush);
-  console.log(`${goal.slug}/${runId}`);
+  if (!options.dryRun) await gitAddCommitPush(bench.slug, modelSlug, runId, runDir, options.noPush);
+  console.log(`${bench.slug}/${runId}`);
   return { runId, runDir };
 }
 
-async function listGoals() {
+async function listBenches() {
   const models = await readJson(repoPath('models.json'));
-  const goalDirs = await discoverGoalSlugs();
-  for (const slug of goalDirs) {
-    const goal = await loadGoal(slug);
+  const benchDirs = await discoverBenchSlugs();
+  for (const slug of benchDirs) {
+    const bench = await loadBench(slug);
     for (const modelSlug of Object.keys(models)) {
-      const runsDir = repoPath('goals', slug, 'runs');
+      const runsDir = repoPath('benches', slug, 'runs');
       let count = 0;
       if (await pathExists(runsDir)) {
         const entries = await readdir(runsDir, { withFileTypes: true });
         count = entries.filter((entry) => entry.isDirectory() && entry.name.startsWith(`${modelSlug}--`)).length;
       }
-      console.log(`${goal.slug}\t${modelSlug}\t${count}\t${goal.title}`);
+      console.log(`${bench.slug}\t${modelSlug}\t${count}\t${bench.title}`);
     }
   }
 }
 
-async function discoverGoalSlugs() {
-  const goalsRoot = repoPath('goals');
-  const entries = await readdir(goalsRoot, { withFileTypes: true });
+async function discoverBenchSlugs() {
+  const benchesRoot = repoPath('benches');
+  const entries = await readdir(benchesRoot, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isDirectory() && existsSync(path.join(goalsRoot, entry.name, 'goal.md')))
+    .filter((entry) => entry.isDirectory() && existsSync(path.join(benchesRoot, entry.name, 'bench.md')))
     .map((entry) => entry.name)
     .sort();
 }
@@ -868,12 +868,12 @@ async function commandRun(args) {
   if (modelIdx === -1 || !args[modelIdx + 1]) usage();
   const modelSlug = args[modelIdx + 1];
   if (args.includes('--all')) {
-    for (const slug of await discoverGoalSlugs()) await runOne(slug, modelSlug, options);
+    for (const slug of await discoverBenchSlugs()) await runOne(slug, modelSlug, options);
     return;
   }
-  const goalSlug = args.find((arg) => !arg.startsWith('--') && arg !== modelSlug && arg !== 'run');
-  if (!goalSlug) usage();
-  await runOne(goalSlug, modelSlug, options);
+  const benchSlug = args.find((arg) => !arg.startsWith('--') && arg !== modelSlug && arg !== 'run');
+  if (!benchSlug) usage();
+  await runOne(benchSlug, modelSlug, options);
 }
 
 async function commandRegen(args) {
@@ -895,11 +895,11 @@ async function commandRegen(args) {
 
 export async function regenerateManifest() {
   const models = await readJson(repoPath('models.json'));
-  const goals = [];
-  for (const slug of await discoverGoalSlugs()) {
-    const goal = await loadGoal(slug);
+  const benches = [];
+  for (const slug of await discoverBenchSlugs()) {
+    const bench = await loadBench(slug);
     const runs = [];
-    const runsDir = repoPath('goals', slug, 'runs');
+    const runsDir = repoPath('benches', slug, 'runs');
     if (await pathExists(runsDir)) {
       const entries = await readdir(runsDir, { withFileTypes: true });
       for (const entry of entries) {
@@ -928,19 +928,19 @@ export async function regenerateManifest() {
       }
     }
     runs.sort((a, b) => String(b.startedAt || '').localeCompare(String(a.startedAt || '')));
-    goals.push({
-      slug: goal.slug,
-      title: goal.title,
-      prompt: goal.prompt,
-      capMinutes: goal.capMinutes,
-      suggestedBy: goal.suggestedBy ?? null,
+    benches.push({
+      slug: bench.slug,
+      title: bench.title,
+      prompt: bench.prompt,
+      capMinutes: bench.capMinutes,
+      suggestedBy: bench.suggestedBy ?? null,
       runs
     });
   }
   const manifest = {
     generatedAt: new Date().toISOString(),
     baseUrl: BASE_URL,
-    goals
+    benches
   };
   await writeJson(repoPath('manifest.json'), manifest);
   return manifest;
@@ -958,20 +958,20 @@ export async function validateManifest(manifest = null) {
   const errors = [];
   if (!Number.isFinite(Date.parse(manifest.generatedAt))) errors.push('generatedAt must be ISO-8601');
   if (manifest.baseUrl !== BASE_URL) errors.push(`baseUrl must be ${BASE_URL}`);
-  if (!Array.isArray(manifest.goals)) errors.push('goals must be an array');
-  for (const [goalIdx, goal] of (manifest.goals || []).entries()) {
-    const prefix = `goals[${goalIdx}]`;
-    if (!goal.slug) errors.push(`${prefix}.slug missing`);
-    if (!goal.title) errors.push(`${prefix}.title missing`);
-    if (typeof goal.prompt !== 'string') errors.push(`${prefix}.prompt must be string`);
-    if (!Number.isFinite(goal.capMinutes)) errors.push(`${prefix}.capMinutes must be number`);
-    if (!Array.isArray(goal.runs)) errors.push(`${prefix}.runs must be array`);
-    for (const [runIdx, run] of (goal.runs || []).entries()) {
+  if (!Array.isArray(manifest.benches)) errors.push('benches must be an array');
+  for (const [benchIdx, bench] of (manifest.benches || []).entries()) {
+    const prefix = `benches[${benchIdx}]`;
+    if (!bench.slug) errors.push(`${prefix}.slug missing`);
+    if (!bench.title) errors.push(`${prefix}.title missing`);
+    if (typeof bench.prompt !== 'string') errors.push(`${prefix}.prompt must be string`);
+    if (!Number.isFinite(bench.capMinutes)) errors.push(`${prefix}.capMinutes must be number`);
+    if (!Array.isArray(bench.runs)) errors.push(`${prefix}.runs must be array`);
+    for (const [runIdx, run] of (bench.runs || []).entries()) {
       const runPrefix = `${prefix}.runs[${runIdx}]`;
-      for (const key of ['runId', 'goal', 'model', 'cli', 'startedAt', 'wallSeconds', 'status', 'exitReason']) {
+      for (const key of ['runId', 'bench', 'model', 'cli', 'startedAt', 'wallSeconds', 'status', 'exitReason']) {
         if (run[key] === undefined || run[key] === null || run[key] === '') errors.push(`${runPrefix}.${key} missing`);
       }
-      if (run.goal !== goal.slug) errors.push(`${runPrefix}.goal does not match goal slug`);
+      if (run.bench !== bench.slug) errors.push(`${runPrefix}.bench does not match bench slug`);
       if (!['ok', 'failed'].includes(run.status)) errors.push(`${runPrefix}.status invalid`);
       if (!Number.isFinite(Date.parse(run.startedAt))) errors.push(`${runPrefix}.startedAt must be ISO-8601`);
       if (!Number.isFinite(run.wallSeconds)) errors.push(`${runPrefix}.wallSeconds must be number`);
@@ -1002,7 +1002,7 @@ export async function validateManifest(manifest = null) {
 async function main(argv) {
   const [command, ...args] = argv;
   if (command === 'run') await commandRun(args);
-  else if (command === 'list') await listGoals();
+  else if (command === 'list') await listBenches();
   else if (command === 'regen') await commandRegen(args);
   else usage(command ? 1 : 0);
 }

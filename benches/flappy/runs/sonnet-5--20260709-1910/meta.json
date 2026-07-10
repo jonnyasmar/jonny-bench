@@ -1,6 +1,6 @@
 {
   "runId": "sonnet-5--20260709-1910",
-  "goal": "flappy",
+  "bench": "flappy",
   "model": "sonnet-5",
   "cli": "claude-code",
   "cliVersion": "2.1.205 (Claude Code)",

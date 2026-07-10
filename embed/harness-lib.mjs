@@ -1,4 +1,4 @@
-export const APP_PATH_RE = /^goals\/[a-z0-9-]+\/runs\/[A-Za-z0-9.\-]+\/app\/$/;
+export const APP_PATH_RE = /^benches\/[a-z0-9-]+\/runs\/[A-Za-z0-9.\-]+\/app\/$/;
 
 export function isValidAppPath(value) {
   return APP_PATH_RE.test(String(value || ''));

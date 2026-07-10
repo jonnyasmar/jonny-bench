@@ -13,7 +13,7 @@
     // Some bench apps persist transient scores/settings, so this wrapper leaves
     // submissions unchanged and installs ephemeral storage only when native
     // localStorage/sessionStorage is blocked, before app scripts execute.
-    const APP_PATH_RE = /^goals\/[a-z0-9-]+\/runs\/[A-Za-z0-9.\-]+\/app\/$/;
+    const APP_PATH_RE = /^benches\/[a-z0-9-]+\/runs\/[A-Za-z0-9.\-]+\/app\/$/;
     const status = document.getElementById('status');
     function showError(message) {
       status.textContent = message;
@@ -55,7 +55,7 @@
     async function main() {
       const app = new URLSearchParams(location.search).get('app') || '';
       if (!APP_PATH_RE.test(app)) {
-        showError('Invalid app path. Expected goals/<slug>/runs/<runId>/app/.');
+        showError('Invalid app path. Expected benches/<slug>/runs/<runId>/app/.');
         return;
       }
 

@@ -42,7 +42,7 @@ async function makeRepo({
           ignored: 'drop me'
         }, null, 2));
   }
-  await mkdir(path.join(root, 'goals', 'tiny'), { recursive: true });
+  await mkdir(path.join(root, 'benches', 'tiny'), { recursive: true });
   await writeFile(path.join(root, 'package.json'), '{"type":"module","private":true}\n');
   await writeFile(path.join(root, 'models.json'), JSON.stringify({
     [modelSlug]: { displayName: modelSlug, vendor: 'Test', cli: cliName, modelArg: 'fake-model-arg' },
@@ -73,7 +73,7 @@ async function makeRepo({
     versionArgv: ['--version'],
     credsFiles: ['.fake/cred.json'],
     env: fakeEnv,
-    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '/goal $PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
+    argv: [fakeCli, '--model', '$MODEL_ARG', '--session', '$SESSION_ID', '--prompt', '$PROMPT', '--artifact', '$RUN_DIR/raw-output.txt', '--home-template', '$HOME/profile.json'],
     transcriptGlob: '$RUN_HOME/transcripts/$SESSION_ID.jsonl',
     preCreateDirs: ['$RUN_HOME/.fake']
   };
@@ -92,7 +92,7 @@ async function makeRepo({
     }];
   }
   await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ [cliName]: fakeRecipe, fake: fakeRecipe }, null, 2));
-  await writeFile(path.join(root, 'goals', 'tiny', 'goal.md'), `---
+  await writeFile(path.join(root, 'benches', 'tiny', 'bench.md'), `---
 slug: tiny
 title: Tiny App
 capMinutes: ${capMinutes}
@@ -135,8 +135,8 @@ function runBench(root, env, args) {
   });
 }
 
-async function findRunDir(root, goal = 'tiny') {
-  const runsRoot = path.join(root, 'goals', goal, 'runs');
+async function findRunDir(root, bench = 'tiny') {
+  const runsRoot = path.join(root, 'benches', bench, 'runs');
   const entries = await readdir(runsRoot, { withFileTypes: true });
   assert.equal(entries.length, 1);
   return path.join(runsRoot, entries[0].name);
@@ -163,20 +163,20 @@ test('dry-run appends run ids and validates the manifest', async () => {
   const second = runBench(root, env, ['run', 'tiny', '--model', 'fable-5', '--dry-run']);
   assert.equal(second.status, 0, second.stderr);
 
-  const runs = await readdir(path.join(root, 'goals', 'tiny', 'runs'));
+  const runs = await readdir(path.join(root, 'benches', 'tiny', 'runs'));
   assert.equal(runs.length, 2);
   assert.notEqual(runs[0], runs[1]);
   assert.ok(runs.every((run) => run.startsWith('fable-5--')));
   for (const run of runs) {
-    const meta = JSON.parse(await readFile(path.join(root, 'goals', 'tiny', 'runs', run, 'meta.json'), 'utf8'));
+    const meta = JSON.parse(await readFile(path.join(root, 'benches', 'tiny', 'runs', run, 'meta.json'), 'utf8'));
     assert.equal(meta.redactions, 0);
   }
 
   const validate = spawnSync(process.execPath, [validator], { cwd: root, env, encoding: 'utf8' });
   assert.equal(validate.status, 0, validate.stderr);
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.goals[0].runs.length, 0);
-  assert.equal(manifest.goals[0].runs.some((run) => run.dryRun === true), false);
+  assert.equal(manifest.benches[0].runs.length, 0);
+  assert.equal(manifest.benches[0].runs.some((run) => run.dryRun === true), false);
 });
 
 test('leak scanner covers secrets, emails, truncation, and home paths', () => {
@@ -228,7 +228,7 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(record.argv[2], '--session');
   assert.match(record.argv[3], /^[0-9a-f-]{36}$/);
   assert.equal(record.argv[4], '--prompt');
-  assert.equal(record.argv[5], '/goal Build a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.argv[5], 'Build a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.argv[6], '--artifact');
   assert.ok(path.isAbsolute(record.argv[7]));
   assert.equal(record.argv[8], '--home-template');
@@ -240,13 +240,13 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.ok(record.cred.path.startsWith(record.env.HOME));
   assert.equal(record.cred.mode, 0o600);
   assert.equal(existsSync(record.env.HOME), false, 'RUN_HOME should be removed after the run');
-  assert.equal((await listFiles(path.join(root, 'goals'))).some((file) => path.basename(file) === 'cred.json'), false);
+  assert.equal((await listFiles(path.join(root, 'benches'))).some((file) => path.basename(file) === 'cred.json'), false);
 
   assert.ok(existsSync(path.join(runDir, 'app', 'index.html')));
   const meta = JSON.parse(await readFile(path.join(runDir, 'meta.json'), 'utf8'));
   assert.equal(meta.status, 'ok');
   assert.equal(meta.exitReason, 'completed');
-  assert.equal(meta.goal, 'tiny');
+  assert.equal(meta.bench, 'tiny');
   assert.equal(meta.model, 'fake-model');
   assert.equal(meta.cli, 'fake');
   assert.equal(meta.totalTokens, null);
@@ -258,11 +258,11 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(meta.argv[9].includes(home), false);
 
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.goals[0].runs[0].appPath.endsWith('/app/index.html'), true);
-  assert.equal(manifest.goals[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
-  assert.equal(manifest.goals[0].runs[0].displayName, 'fake-model');
-  assert.equal(manifest.goals[0].runs[0].vendor, 'Test');
-  assert.deepEqual(manifest.goals[0].runs[0].argv, meta.argv);
+  assert.equal(manifest.benches[0].runs[0].appPath.endsWith('/app/index.html'), true);
+  assert.equal(manifest.benches[0].runs[0].transcriptPath.endsWith('/transcript.jsonl'), true);
+  assert.equal(manifest.benches[0].runs[0].displayName, 'fake-model');
+  assert.equal(manifest.benches[0].runs[0].vendor, 'Test');
+  assert.deepEqual(manifest.benches[0].runs[0].argv, meta.argv);
 });
 
 test('child PATH is minimal and recipe bin is resolved before spawn', async () => {
@@ -345,13 +345,13 @@ test('authExec and seedFiles destination paths must stay inside RUN_HOME before 
   const authResult = runBench(authCase.root, authCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
   assert.notEqual(authResult.status, 0);
   assert.match(authResult.stderr, /authExec\.writeTo must resolve inside RUN_HOME/);
-  assert.equal(existsSync(path.join(authCase.root, 'goals', 'tiny', 'runs')), false);
+  assert.equal(existsSync(path.join(authCase.root, 'benches', 'tiny', 'runs')), false);
 
   const seedCase = await makeRepo({ includeAuth: true, seedTo: '$HOME/outside-seed.json' });
   const seedResult = runBench(seedCase.root, seedCase.env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
   assert.notEqual(seedResult.status, 0);
   assert.match(seedResult.stderr, /seedFiles\.to must resolve inside RUN_HOME/);
-  assert.equal(existsSync(path.join(seedCase.root, 'goals', 'tiny', 'runs')), false);
+  assert.equal(existsSync(path.join(seedCase.root, 'benches', 'tiny', 'runs')), false);
 });
 
 test('seedFiles invalid JSON aborts with the source path only and no run dir', async () => {
@@ -361,7 +361,7 @@ test('seedFiles invalid JSON aborts with the source path only and no run dir', a
   const source = path.join(home, 'source.json');
   assert.match(result.stderr, new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(result.stderr, /oauthAccount/);
-  assert.equal(existsSync(path.join(root, 'goals', 'tiny', 'runs')), false);
+  assert.equal(existsSync(path.join(root, 'benches', 'tiny', 'runs')), false);
 });
 
 test('wall-clock cap kills the child and still publishes a failed run', async () => {
@@ -375,8 +375,8 @@ test('wall-clock cap kills the child and still publishes a failed run', async ()
   assert.equal(existsSync(path.join(runDir, 'app', 'index.html')), false);
   assert.ok(existsSync(path.join(runDir, 'cli-output.jsonl')));
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.goals[0].runs[0].appPath, null);
-  assert.equal(manifest.goals[0].runs[0].transcriptPath.endsWith('/cli-output.jsonl'), true);
+  assert.equal(manifest.benches[0].runs[0].appPath, null);
+  assert.equal(manifest.benches[0].runs[0].transcriptPath.endsWith('/cli-output.jsonl'), true);
 });
 
 test('preflight refuses dirty files outside run dirs and manifest before spawning', async () => {
@@ -385,7 +385,7 @@ test('preflight refuses dirty files outside run dirs and manifest before spawnin
   const result = runBench(root, env, ['run', 'tiny', '--model', 'fake-model', '--no-push', '--no-screenshot']);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /Refusing to publish/);
-  assert.equal(existsSync(path.join(root, 'goals', 'tiny', 'runs')), false);
+  assert.equal(existsSync(path.join(root, 'benches', 'tiny', 'runs')), false);
 });
 
 test('fake CLI run creates one commit touching only the run dir and manifest', async () => {
@@ -398,7 +398,7 @@ test('fake CLI run creates one commit touching only the run dir and manifest', a
     .split('\n')
     .filter(Boolean);
   assert.ok(names.includes('manifest.json'));
-  assert.ok(names.every((name) => name === 'manifest.json' || /^goals\/tiny\/runs\/fake-model--[^/]+\//.test(name)), names.join('\n'));
+  assert.ok(names.every((name) => name === 'manifest.json' || /^benches\/tiny\/runs\/fake-model--[^/]+\//.test(name)), names.join('\n'));
   const count = execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   assert.equal(count, '2');
 });
@@ -441,7 +441,7 @@ test('usage extraction supports claude, codex, and absent usage shapes', () => {
   ].join('\n');
   assert.deepEqual(extractUsage('codex', rollout), { totalTokens: 26, totalCostUsd: null });
 
-  const realCodexTranscript = path.join(repoRoot, 'goals', 'flappy', 'runs', 'gpt-5.5--20260709-1835', 'transcript.jsonl');
+  const realCodexTranscript = path.join(repoRoot, 'benches', 'flappy', 'runs', 'gpt-5.5--20260709-1835', 'transcript.jsonl');
   assert.equal(extractUsage('codex', readFileSync(realCodexTranscript, 'utf8')).totalTokens, 433360);
   assert.deepEqual(extractUsage('claude-code', '{"type":"message"}\n'), { totalTokens: null, totalCostUsd: null });
 });

@@ -1,6 +1,6 @@
 {
   "runId": "gpt-5.5--20260709-1835",
-  "goal": "flappy",
+  "bench": "flappy",
   "model": "gpt-5.5",
   "cli": "codex",
   "cliVersion": "codex-cli 0.143.0",
