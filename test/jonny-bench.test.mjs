@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { buildSpawnArgvWithMeta, extractUsage } from '../bin/jonny-bench.mjs';
+import { buildSpawnArgvWithMeta, detectRootAbsoluteAssetPaths, extractUsage } from '../bin/jonny-bench.mjs';
 import { scanText } from '../bin/leak-scan.mjs';
 import './embed-harness.test.mjs';
 
@@ -114,6 +114,7 @@ async function makeRepo({
     }];
   }
   await writeFile(path.join(root, 'cli-recipes.json'), JSON.stringify({ [cliName]: fakeRecipe, fake: fakeRecipe }, null, 2));
+  await writeFile(path.join(root, 'jonny-bench-instructions.md'), 'Global rule: keep it terse.\n');
   await writeFile(path.join(root, 'benches', 'tiny', 'bench.md'), `---
 slug: tiny
 title: Tiny App
@@ -254,13 +255,13 @@ test('fake CLI receives exact env, substituted argv, copied creds, and publishes
   assert.equal(record.argv[6], '--session');
   assert.match(record.argv[7], /^[0-9a-f-]{36}$/);
   assert.equal(record.argv[8], '--prompt');
-  assert.equal(record.argv[9], 'Build a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.argv[9], 'Global rule: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.argv[10], '--artifact');
   assert.ok(path.isAbsolute(record.argv[11]));
   assert.equal(record.argv[12], '--home-template');
   assert.ok(path.isAbsolute(record.argv[13]));
   assert.equal(record.argv.length, 14);
-  assert.equal(record.env.PROMPT_COPY, 'Build a tiny app.\nKeep this prompt as one argv element.\n');
+  assert.equal(record.env.PROMPT_COPY, 'Global rule: keep it terse.\n\n---\n\nBuild a tiny app.\nKeep this prompt as one argv element.\n');
   assert.equal(record.env.CUSTOM_ENV, `model=fake-model-arg session=${record.argv[7]}`);
 
   assert.ok(record.cred.path.startsWith(record.env.HOME));
@@ -496,6 +497,23 @@ test('fake CLI run creates one commit touching only the run dir and manifest', a
   assert.ok(names.every((name) => name === 'manifest.json' || /^benches\/tiny\/runs\/fake-model--[^/]+\//.test(name)), names.join('\n'));
   const count = execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   assert.equal(count, '2');
+});
+
+test('root-absolute asset path detector flags src/href but not relative or protocol-relative paths', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'jonny-bench-assets-'));
+  await writeFile(path.join(dir, 'index.html'), [
+    '<script type="module" crossorigin src="/assets/index-abc123.js"></script>',
+    '<link rel="stylesheet" crossorigin href="/assets/index-abc123.css">',
+    '<script src="./assets/relative.js"></script>',
+    '<link rel="preconnect" href="//fonts.example.com">',
+    '<img src="assets/no-leading-slash.png">'
+  ].join('\n'));
+  const findings = await detectRootAbsoluteAssetPaths(dir);
+  assert.deepEqual(findings.map((f) => ({ line: f.line, match: f.match })), [
+    { line: 1, match: 'src="/assets/index-abc123.js"' },
+    { line: 2, match: 'href="/assets/index-abc123.css"' }
+  ]);
+  assert.equal(findings[0].file, 'index.html');
 });
 
 test('usage extraction supports claude, codex, and absent usage shapes', () => {

@@ -76,7 +76,9 @@ export async function loadBench(slug) {
     if (parsed.data[key] === undefined) throw new Error(`${file} missing ${key}`);
   }
   if (parsed.data.slug !== slug) throw new Error(`${file} slug ${parsed.data.slug} does not match ${slug}`);
-  return { ...parsed.data, prompt: parsed.body, file };
+  const instructions = (await readFile(repoPath('jonny-bench-instructions.md'), 'utf8')).trim();
+  const prompt = `${instructions}\n\n---\n\n${parsed.body.trim()}\n`;
+  return { ...parsed.data, prompt, file };
 }
 
 function formatLocalRunStamp(date = new Date()) {
@@ -452,6 +454,30 @@ async function copyApp(src, dest) {
   });
 }
 
+const ROOT_ABSOLUTE_ASSET_RE = /(?:src|href)\s*=\s*(["'])\/(?!\/)[^"']*\1/gi;
+
+// Static early-warning for the class of bug that breaks silently on the
+// real nested deployment path but not against tryScreenshot's own mount
+// (or a bundler's local dev server bound to "/"): root-absolute asset
+// references, which 404 once the app is served from a subdirectory.
+export async function detectRootAbsoluteAssetPaths(appDir) {
+  const findings = [];
+  await walk(appDir, async (file, dirent) => {
+    if (!dirent.isFile() || !(await isTextFile(file))) return;
+    const lines = (await readFile(file, 'utf8')).split(/\r?\n/);
+    lines.forEach((line, index) => {
+      for (const match of line.match(ROOT_ABSOLUTE_ASSET_RE) || []) {
+        findings.push({
+          file: path.relative(appDir, file).replaceAll(path.sep, '/'),
+          line: index + 1,
+          match
+        });
+      }
+    });
+  });
+  return findings;
+}
+
 function parseJsonLines(text) {
   const values = [];
   for (const line of text.split(/\r?\n/)) {
@@ -724,6 +750,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
 
     let status = result.exitReason === 'completed' ? 'ok' : 'failed';
     let exitReason = result.exitReason;
+    let rootAbsolutePaths = [];
     if (appDir) {
       const size = await payloadSize(appDir);
       if (size > PAYLOAD_LIMIT_BYTES) {
@@ -731,6 +758,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
         exitReason = 'oversize';
       } else {
         await copyApp(appDir, path.join(runDir, 'app'));
+        rootAbsolutePaths = await detectRootAbsoluteAssetPaths(path.join(runDir, 'app'));
       }
     } else {
       status = 'failed';
@@ -749,6 +777,7 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
       cliVersion,
       startedAt,
       wallSeconds: result.wallSeconds,
+      rootAbsolutePaths,
       totalTokens: usage.totalTokens,
       totalCostUsd: usage.totalCostUsd,
       status,
@@ -757,7 +786,8 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
     };
     const redactionState = await redactRunArtifacts(runDir);
     if (!options.noScreenshot && await pathExists(path.join(runDir, 'app', 'index.html'))) {
-      await tryScreenshot(path.join(runDir, 'app'), path.join(runDir, 'screenshot.png'));
+      const mountPath = path.relative(process.cwd(), path.join(runDir, 'app')).replaceAll(path.sep, '/');
+      await tryScreenshot(path.join(runDir, 'app'), path.join(runDir, 'screenshot.png'), mountPath);
     }
     await writeMetaAfterLeakGate(runDir, meta, options, redactionState);
     return meta;
@@ -769,12 +799,21 @@ async function runReal(bench, modelSlug, model, recipe, runId, runDir, options, 
   }
 }
 
-async function tryScreenshot(appDir, screenshotPath) {
+// Mount the app at its real published path (benches/<slug>/runs/<runId>/app/),
+// not the server root, so a root-absolute asset reference 404s here exactly
+// like it will on the live nested deployment -- a screenshot served from the
+// root would silently mask that class of bug.
+async function tryScreenshot(appDir, screenshotPath, mountPath) {
   let server;
   try {
+    const prefix = `/${mountPath}/`.replace(/\/+/g, '/');
     server = createServer(async (req, res) => {
       const urlPath = decodeURIComponent(new URL(req.url || '/', 'http://127.0.0.1').pathname);
-      const rel = urlPath === '/' ? 'index.html' : urlPath.slice(1);
+      if (!urlPath.startsWith(prefix)) {
+        res.writeHead(404).end();
+        return;
+      }
+      const rel = urlPath.slice(prefix.length) || 'index.html';
       const file = path.normalize(path.join(appDir, rel));
       if (!file.startsWith(appDir)) {
         res.writeHead(403).end();
@@ -788,7 +827,7 @@ async function tryScreenshot(appDir, screenshotPath) {
     });
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
     const { port } = server.address();
-    await runCapture('npx', ['-y', 'playwright', 'screenshot', `http://127.0.0.1:${port}/`, screenshotPath], {
+    await runCapture('npx', ['-y', 'playwright', 'screenshot', `http://127.0.0.1:${port}${prefix}`, screenshotPath], {
       cwd: process.cwd(),
       env: process.env,
       timeoutMs: 60_000
@@ -1043,6 +1082,9 @@ export async function validateManifest(manifest = null) {
       }
       if (run.argv !== undefined && (!Array.isArray(run.argv) || run.argv.some((arg) => typeof arg !== 'string'))) {
         errors.push(`${runPrefix}.argv must be an optional array of strings`);
+      }
+      if (run.rootAbsolutePaths !== undefined && !Array.isArray(run.rootAbsolutePaths)) {
+        errors.push(`${runPrefix}.rootAbsolutePaths must be an optional array`);
       }
       for (const [key, required] of [['appPath', run.status === 'ok'], ['transcriptPath', true], ['screenshotPath', false]]) {
         const value = run[key];
