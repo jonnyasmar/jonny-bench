@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-10T21:21:47.633Z",
+  "generatedAt": "2026-07-10T21:47:24.029Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -10,6 +10,47 @@
       "capMinutes": 90,
       "suggestedBy": null,
       "runs": [
+        {
+          "runId": "grok-4.5--20260710-1742",
+          "bench": "3d-gradius",
+          "model": "grok-4.5",
+          "effort": "high",
+          "cli": "grok",
+          "cliVersion": "grok 0.2.93 (f00f96316d4b)",
+          "startedAt": "2026-07-10T21:42:07.242Z",
+          "wallSeconds": 284,
+          "rootAbsolutePaths": [],
+          "totalTokens": 613602,
+          "totalCostUsd": null,
+          "estimatedCostUsd": 0.6785,
+          "usage": {
+            "inputTokens": 556722,
+            "cachedInputTokens": 517504,
+            "outputTokens": 56880
+          },
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "[prompt]",
+            "--model",
+            "grok-4.5",
+            "--reasoning-effort",
+            "high",
+            "--always-approve",
+            "--output-format",
+            "streaming-json",
+            "--verbatim"
+          ],
+          "appPath": "benches/3d-gradius/runs/grok-4.5--20260710-1742/app/index.html",
+          "screenshotPath": "benches/3d-gradius/runs/grok-4.5--20260710-1742/screenshot.png",
+          "redactions": 0,
+          "displayName": "Grok 4.5",
+          "vendor": "xAI",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/3d-gradius/runs/grok-4.5--20260710-1742/transcript.jsonl"
+        },
         {
           "runId": "opus-4.8--20260710-1629",
           "bench": "3d-gradius",
