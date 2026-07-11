@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071027">
+  <meta name="description" content="Stellar Scouts — an interactive solar system learning adventure for young explorers.">
+  <title>Stellar Scouts</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="nebula nebula-a" aria-hidden="true"></div>
+  <div class="nebula nebula-b" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="brand" data-go="home" aria-label="Stellar Scouts home">
+      <span class="brand-mark">✦</span>
+      <span><b>STELLAR</b><small>SCOUTS</small></span>
+    </button>
+    <div class="mission-progress" aria-label="Mission progress">
+      <span>MISSION PROGRESS</span>
+      <div class="progress-track"><i id="progressFill"></i></div>
+      <b id="progressText">0 / 8</b>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="soundBtn" aria-label="Toggle sounds" title="Toggle sounds">♪</button>
+      <button class="avatar-btn" id="passportBtn" aria-label="Open space passport"><span>🚀</span><i id="badgeCount">0</i></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="screen active" id="homeScreen">
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span> CADET TRAINING • LEVEL 1</div>
+        <h1>Ready to explore<br><em>our cosmic home?</em></h1>
+        <p>Visit every world, uncover amazing secrets, and earn your official Solar System Expert badge.</p>
+        <div class="hero-actions">
+          <button class="primary-btn" id="launchBtn"><span>START THE MISSION</span><b>→</b></button>
+          <button class="text-btn" id="howBtn"><span>▶</span> How to play</button>
+        </div>
+        <div class="quick-stats">
+          <div><strong>8</strong><span>PLANETS</span></div>
+          <i></i><div><strong>5</strong><span>MIN MISSIONS</span></div>
+          <i></i><div><strong>∞</strong><span>WONDER</span></div>
+        </div>
+      </div>
+
+      <div class="hero-system" aria-label="Animated solar system preview">
+        <div class="sun-glow"></div>
+        <div class="hero-sun"><span></span></div>
+        <div class="orbit-line o1"><i class="mini-planet mercury"></i></div>
+        <div class="orbit-line o2"><i class="mini-planet venus"></i></div>
+        <div class="orbit-line o3"><i class="mini-planet earth"></i></div>
+        <div class="orbit-line o4"><i class="mini-planet mars"></i></div>
+        <div class="orbit-line o5"><i class="mini-planet jupiter"></i></div>
+        <div class="orbit-line o6"><i class="mini-planet saturn"></i></div>
+        <div class="orbit-line o7"><i class="mini-planet uranus"></i></div>
+        <div class="orbit-line o8"><i class="mini-planet neptune"></i></div>
+        <div class="callout"><span>YOU ARE HERE</span><b>Our tiny blue home</b><i></i></div>
+        <div class="float-chip chip-one"><b>☀</b><span>ONE STAR<br><strong>THE SUN</strong></span></div>
+        <div class="float-chip chip-two"><b>8</b><span>WORLDS<br><strong>TO DISCOVER</strong></span></div>
+      </div>
+      <button class="scroll-cue" id="launchCue"><span>SCROLL TO LAUNCH</span><b>↓</b></button>
+    </section>
+
+    <section class="screen explorer-screen" id="explorerScreen">
+      <div class="section-heading">
+        <div><span class="eyebrow"><span></span> ORBIT EXPLORER</span><h2>Choose your next world</h2></div>
+        <p>Tap a planet to fly there. Visit all eight to unlock the final challenge!</p>
+      </div>
+      <div class="explorer-layout">
+        <div class="planet-rail" id="planetRail" role="list" aria-label="Planets"></div>
+        <article class="planet-stage" id="planetStage">
+          <div class="stage-stars"></div>
+          <div class="planet-visual-wrap">
+            <div class="planet-halo"></div>
+            <div class="big-planet earth" id="bigPlanet"><span class="ring"></span><i class="spot s1"></i><i class="spot s2"></i><i class="spot s3"></i></div>
+            <button class="rotate-hint" id="spinBtn">↻ <span>SPIN ME</span></button>
+          </div>
+          <div class="planet-info">
+            <div class="planet-kicker" id="planetKicker">PLANET 3 OF 8</div>
+            <h2 id="planetName">Earth</h2>
+            <p class="planet-tagline" id="planetTagline">Our one-of-a-kind ocean world.</p>
+            <button class="listen-btn" id="listenBtn">♪ <span>READ TO ME</span></button>
+            <div class="fact-grid" id="factGrid"></div>
+            <div class="wow-card"><span>✦</span><div><b>WOW FACT</b><p id="wowFact"></p></div></div>
+            <button class="primary-btn compact" id="stampBtn"><span>COLLECT PLANET STAMP</span><b>＋</b></button>
+          </div>
+        </article>
+      </div>
+      <div class="tool-switcher" aria-label="Learning tools">
+        <button class="active" data-tool="explore">◉ <span>EXPLORE</span></button>
+        <button data-tool="compare">◒ <span>COMPARE</span></button>
+        <button data-tool="quiz">? <span>QUIZ</span></button>
+      </div>
+    </section>
+
+    <section class="screen compare-screen" id="compareScreen">
+      <button class="back-btn" data-go="explore">← BACK TO EXPLORER</button>
+      <div class="section-heading centered"><div><span class="eyebrow"><span></span> PLANET LAB <span></span></span><h2>How do the worlds compare?</h2></div><p>Pick a superpower and see the planets line up!</p></div>
+      <div class="compare-tabs" id="compareTabs">
+        <button class="active" data-compare="size">◉ SIZE</button>
+        <button data-compare="temp">♨ TEMPERATURE</button>
+        <button data-compare="year">↻ YEAR LENGTH</button>
+      </div>
+      <div class="comparison-card">
+        <div class="comparison-title"><span id="compareIcon">◉</span><div><b id="compareTitle">BIGGEST TO SMALLEST</b><small id="compareSubtitle">If Earth were a marble...</small></div></div>
+        <div class="comparison-chart" id="comparisonChart"></div>
+      </div>
+      <div class="lab-note" id="labNote"><span>💡</span><p><b>SCOUT TIP</b><br>Jupiter is so big that about 1,300 Earths could fit inside it!</p></div>
+    </section>
+
+    <section class="screen quiz-screen" id="quizScreen">
+      <button class="back-btn" data-go="explore">← BACK TO EXPLORER</button>
+      <div class="quiz-shell">
+        <div class="quiz-top"><span class="eyebrow"><span></span> FINAL FLIGHT CHECK</span><div><i id="quizProgress"></i></div><b id="quizCounter">1 / 6</b></div>
+        <div id="quizContent">
+          <div class="question-icon" id="questionIcon">☀</div>
+          <p class="question-type">CHOOSE ONE</p>
+          <h2 id="questionText">Which object is the star at the center of our solar system?</h2>
+          <button class="listen-btn centered-listen" id="questionListen">♪ <span>READ QUESTION</span></button>
+          <div class="answers" id="answers"></div>
+          <p class="answer-feedback" id="answerFeedback" aria-live="polite"></p>
+        </div>
+        <div class="quiz-result hidden" id="quizResult">
+          <div class="expert-badge"><span>★</span><b>SOLAR SYSTEM</b><strong>EXPERT</strong></div>
+          <p class="question-type">MISSION COMPLETE</p>
+          <h2>You’re officially a<br><em>Solar System Expert!</em></h2>
+          <p id="scoreLine"></p>
+          <button class="primary-btn" id="replayQuiz"><span>PLAY AGAIN</span><b>↻</b></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="howModal" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="closeHow" aria-label="Close">×</button>
+      <div class="modal-rocket">🚀</div>
+      <p class="question-type">YOUR MISSION</p>
+      <h2 id="howTitle">Become a Solar System Expert</h2>
+      <div class="steps"><div><b>1</b><p><strong>EXPLORE</strong><br>Visit all 8 planets</p></div><div><b>2</b><p><strong>COLLECT</strong><br>Earn every stamp</p></div><div><b>3</b><p><strong>MASTER</strong><br>Pass the flight check</p></div></div>
+      <button class="primary-btn" id="modalLaunch"><span>LET’S LAUNCH</span><b>→</b></button>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="passportModal" role="dialog" aria-modal="true" aria-labelledby="passportTitle">
+    <div class="modal-card passport-card">
+      <button class="modal-close" id="closePassport" aria-label="Close">×</button>
+      <p class="question-type">SPACE PASSPORT</p>
+      <h2 id="passportTitle">Your planet stamps</h2>
+      <div class="stamp-grid" id="stampGrid"></div>
+      <p id="passportNote">Explore a planet and collect its stamp!</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"><span>★</span><div><b>STAMP COLLECTED!</b><p></p></div></div>
+  <script src="./app.js"></script>
+</body>
+</html>
