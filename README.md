@@ -66,6 +66,6 @@ Add models in `models.json`. CLI invocation details live in `cli-recipes.json`.
 
 ## Benches
 
-Benches are curated prompts under `benches/<slug>/bench.md`. To suggest a new bench, ping X `@jonnyasmar`.
+Benches are curated prompts under `benches/<slug>/bench.md`. To suggest a new bench, ping X `@jonnygravity`.
 
 This is a vibe bench, n=1 per run. Read the transcripts.
