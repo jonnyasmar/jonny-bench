@@ -1,0 +1,36 @@
+{
+  "runId": "grok-4.5--20260711-0732",
+  "bench": "solar-system",
+  "model": "grok-4.5",
+  "effort": "high",
+  "cli": "grok",
+  "cliVersion": "grok 0.2.93 (f00f96316d4b)",
+  "startedAt": "2026-07-11T11:32:07.061Z",
+  "wallSeconds": 190,
+  "rootAbsolutePaths": [],
+  "totalTokens": 542743,
+  "totalCostUsd": null,
+  "estimatedCostUsd": 0.6601,
+  "usage": {
+    "inputTokens": 487195,
+    "cachedInputTokens": 431744,
+    "outputTokens": 55548
+  },
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "--model",
+    "grok-4.5",
+    "--reasoning-effort",
+    "high",
+    "--always-approve",
+    "--output-format",
+    "streaming-json",
+    "--verbatim"
+  ],
+  "appPath": "benches/solar-system/runs/grok-4.5--20260711-0732/app/index.html",
+  "screenshotPath": "benches/solar-system/runs/grok-4.5--20260711-0732/screenshot.png",
+  "redactions": 0
+}

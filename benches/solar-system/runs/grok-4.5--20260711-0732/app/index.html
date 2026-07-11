@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Explore Our Solar System — a fun interactive learning tool for kids ages 4–7" />
+  <title>Solar System Adventure 🚀</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Starfield background -->
+    <canvas id="stars-bg" aria-hidden="true"></canvas>
+
+    <!-- Header -->
+    <header class="top-bar">
+      <button type="button" id="btn-home" class="icon-btn" aria-label="Home" title="Home">🏠</button>
+      <h1 class="logo">Solar System Adventure</h1>
+      <div class="score-pill" id="star-score" title="Stars earned">
+        <span class="star-icon">⭐</span>
+        <span id="star-count">0</span>
+      </div>
+    </header>
+
+    <!-- Home screen -->
+    <section id="screen-home" class="screen active">
+      <div class="hero">
+        <div class="hero-planet" aria-hidden="true">🪐</div>
+        <h2>Ready for space?</h2>
+        <p class="hero-sub">Learn about the Sun and all 8 planets!</p>
+      </div>
+      <nav class="mode-grid" aria-label="Learning modes">
+        <button type="button" class="mode-card" data-mode="explore">
+          <span class="mode-emoji">🔭</span>
+          <span class="mode-title">Explore</span>
+          <span class="mode-desc">Fly around the planets</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="book">
+          <span class="mode-emoji">📖</span>
+          <span class="mode-title">Planet Book</span>
+          <span class="mode-desc">Read fun facts</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="order">
+          <span class="mode-emoji">🔢</span>
+          <span class="mode-title">Planet Order</span>
+          <span class="mode-desc">Put them in line</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="size">
+          <span class="mode-emoji">📏</span>
+          <span class="mode-title">Size Compare</span>
+          <span class="mode-desc">Who is biggest?</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="quiz">
+          <span class="mode-emoji">🧠</span>
+          <span class="mode-title">Space Quiz</span>
+          <span class="mode-desc">Test what you know</span>
+        </button>
+        <button type="button" class="mode-card" data-mode="memory">
+          <span class="mode-emoji">🃏</span>
+          <span class="mode-title">Memory Match</span>
+          <span class="mode-desc">Match the planets</span>
+        </button>
+      </nav>
+      <p class="age-hint">Made for space explorers ages 4 &amp; 7 ✨</p>
+    </section>
+
+    <!-- Explore 3D -->
+    <section id="screen-explore" class="screen">
+      <div class="explore-wrap">
+        <canvas id="solar-canvas"></canvas>
+        <div class="explore-hint" id="explore-hint">👆 Tap a planet to learn about it!</div>
+        <div class="planet-rail" id="planet-rail" aria-label="Pick a planet"></div>
+        <div class="explore-controls">
+          <button type="button" id="btn-spin" class="chip-btn" aria-pressed="true">🔄 Spin</button>
+          <button type="button" id="btn-labels" class="chip-btn" aria-pressed="true">🏷️ Names</button>
+          <button type="button" id="btn-reset-cam" class="chip-btn">🎥 Reset View</button>
+        </div>
+      </div>
+      <!-- Planet detail drawer -->
+      <aside id="planet-drawer" class="drawer" aria-hidden="true">
+        <button type="button" class="drawer-close" id="drawer-close" aria-label="Close">✕</button>
+        <div class="drawer-body" id="drawer-body"></div>
+      </aside>
+    </section>
+
+    <!-- Planet Book -->
+    <section id="screen-book" class="screen">
+      <div class="book-nav">
+        <button type="button" id="book-prev" class="nav-arrow" aria-label="Previous">◀</button>
+        <div class="book-dots" id="book-dots"></div>
+        <button type="button" id="book-next" class="nav-arrow" aria-label="Next">▶</button>
+      </div>
+      <article class="book-card" id="book-card">
+        <!-- filled by JS -->
+      </article>
+      <div class="level-toggle">
+        <button type="button" class="level-btn active" data-level="little">Little Kids 🐣</button>
+        <button type="button" class="level-btn" data-level="big">Big Kids 🦊</button>
+      </div>
+    </section>
+
+    <!-- Order game -->
+    <section id="screen-order" class="screen">
+      <div class="game-header">
+        <h2>Put the planets in order!</h2>
+        <p>Tap planets to line them up from the Sun — closest first!</p>
+        <p class="mnemonic">Hint: <strong>M</strong>y <strong>V</strong>ery <strong>E</strong>ducated <strong>M</strong>other <strong>J</strong>ust <strong>S</strong>erved <strong>U</strong>s <strong>N</strong>achos</p>
+      </div>
+      <div class="order-sun">☀️ Sun</div>
+      <div class="order-slots" id="order-slots"></div>
+      <div class="order-bank" id="order-bank"></div>
+      <div class="game-actions">
+        <button type="button" id="order-check" class="primary-btn">Check Order ✓</button>
+        <button type="button" id="order-reset" class="secondary-btn">Shuffle Again</button>
+      </div>
+      <div id="order-feedback" class="feedback" role="status"></div>
+    </section>
+
+    <!-- Size compare -->
+    <section id="screen-size" class="screen">
+      <div class="game-header">
+        <h2>How big are the planets?</h2>
+        <p>Tap a planet to compare it with Earth</p>
+      </div>
+      <div class="size-picker" id="size-picker"></div>
+      <div class="size-stage" id="size-stage">
+        <div class="size-earth-label">Earth 🌍</div>
+        <div class="size-compare-label" id="size-compare-label"></div>
+        <canvas id="size-canvas" width="800" height="320"></canvas>
+        <p class="size-fact" id="size-fact">Pick a planet above!</p>
+      </div>
+    </section>
+
+    <!-- Quiz -->
+    <section id="screen-quiz" class="screen">
+      <div class="game-header">
+        <h2>Space Quiz 🚀</h2>
+        <div class="quiz-progress">
+          <span id="quiz-progress-text">Question 1 of 8</span>
+          <div class="progress-bar"><div id="quiz-bar" class="progress-fill"></div></div>
+        </div>
+      </div>
+      <div class="quiz-card" id="quiz-card">
+        <!-- filled by JS -->
+      </div>
+      <div id="quiz-feedback" class="feedback" role="status"></div>
+      <div class="game-actions" id="quiz-actions" hidden>
+        <button type="button" id="quiz-next" class="primary-btn">Next Question →</button>
+      </div>
+      <div id="quiz-results" class="quiz-results" hidden></div>
+    </section>
+
+    <!-- Memory match -->
+    <section id="screen-memory" class="screen">
+      <div class="game-header">
+        <h2>Memory Match</h2>
+        <p>Find matching planet pairs! Moves: <strong id="memory-moves">0</strong></p>
+      </div>
+      <div class="memory-grid" id="memory-grid"></div>
+      <div class="game-actions">
+        <button type="button" id="memory-reset" class="secondary-btn">New Game</button>
+      </div>
+      <div id="memory-feedback" class="feedback" role="status"></div>
+    </section>
+
+    <!-- Celebration overlay -->
+    <div id="celebrate" class="celebrate" hidden aria-live="polite">
+      <div class="celebrate-card">
+        <div class="celebrate-emoji" id="celebrate-emoji">🌟</div>
+        <h2 id="celebrate-title">Amazing!</h2>
+        <p id="celebrate-msg">You earned stars!</p>
+        <button type="button" id="celebrate-ok" class="primary-btn">Keep Exploring!</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="./assets/js/main.js"></script>
+</body>
+</html>
