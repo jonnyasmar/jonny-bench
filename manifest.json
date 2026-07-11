@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T01:27:06.986Z",
+  "generatedAt": "2026-07-11T11:34:07.551Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -340,6 +340,55 @@
           "appPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/app/index.html",
           "transcriptPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/transcript.jsonl",
           "screenshotPath": "benches/3d-gradius/runs/gpt-5.5--20260710-0313/screenshot.png"
+        }
+      ]
+    },
+    {
+      "slug": "solar-system",
+      "title": "A simple, interactive educational tool to teach kids about our solar system.",
+      "prompt": "Build a highly interactive education tool to teach kids about our solar system.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n- You will be graded on how engaging and effective of a tool it is.\n- The tool will be used by a 4 and 7 year old and they should be experts on the must-know information about our solar system by the time they're done.\n- You may use any libraries you see fit, such as Three.js or you can build it in native tech like Canvas/WebGL.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.",
+      "sharedInstructions": "# jonny-bench: global instructions\n\nThese rules apply to every bench in this repo, on top of the specific bench prompt below. They exist so you don't have to guess at the environment your submission runs in or gets evaluated in.\n\n## Deployment environment\n\nYour finished submission is published as a static site nested under a subdirectory path (e.g. `https://jonnyasmar.github.io/jonny-bench/benches/<slug>/runs/<run-id>/app/`), not the domain root, with no server-side routing or rewrites.\n\n- Use relative asset paths only (`./assets/foo.js`, `assets/foo.css`). Never use root-absolute paths (`/assets/foo.js`) — they resolve fine in local dev or when served from a server's root, but 404 once nested under a subdirectory.\n- If you use a bundler (Vite, webpack, esbuild, etc.), set its base/public-path option to relative (e.g. Vite's `base: './'`) so the build works from any subdirectory, not just the root.\n- Verify your build by opening its `index.html` from a nested folder, or via `file://`, not only through a dev server bound to `/`.\n",
+      "capMinutes": 90,
+      "suggestedBy": null,
+      "runs": [
+        {
+          "runId": "gemini-3.1-pro--20260711-0732",
+          "bench": "solar-system",
+          "model": "gemini-3.1-pro",
+          "effort": "high",
+          "cli": "antigravity",
+          "cliVersion": "1.1.1",
+          "startedAt": "2026-07-11T11:32:07.346Z",
+          "wallSeconds": 116,
+          "rootAbsolutePaths": [],
+          "totalTokens": 362248,
+          "totalCostUsd": null,
+          "estimatedCostUsd": 0.8569,
+          "usage": {
+            "inputTokens": 349007,
+            "cachedInputTokens": 267662,
+            "outputTokens": 13241
+          },
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "[prompt]",
+            "--model",
+            "Gemini 3.1 Pro (High)",
+            "--dangerously-skip-permissions",
+            "--new-project",
+            "--print-timeout",
+            "88m"
+          ],
+          "appPath": "benches/solar-system/runs/gemini-3.1-pro--20260711-0732/app/index.html",
+          "screenshotPath": "benches/solar-system/runs/gemini-3.1-pro--20260711-0732/screenshot.png",
+          "redactions": 0,
+          "displayName": "Gemini 3.1 Pro",
+          "vendor": "Google",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/solar-system/runs/gemini-3.1-pro--20260711-0732/transcript.jsonl"
         }
       ]
     }
