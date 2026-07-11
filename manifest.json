@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T11:38:39.855Z",
+  "generatedAt": "2026-07-11T11:53:46.972Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -389,6 +389,45 @@
           "flagship": true,
           "rank": 1,
           "transcriptPath": "benches/solar-system/runs/gemini-3.1-pro--20260711-0732/transcript.jsonl"
+        },
+        {
+          "runId": "fable-5--20260711-0732",
+          "bench": "solar-system",
+          "model": "fable-5",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.207 (Claude Code)",
+          "startedAt": "2026-07-11T11:32:07.127Z",
+          "wallSeconds": 1291,
+          "rootAbsolutePaths": [],
+          "totalTokens": 2528577,
+          "totalCostUsd": 8.152168000000001,
+          "estimatedCostUsd": null,
+          "usage": null,
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-fable-5",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "d28872c2-92ed-450f-971e-d73309da9e5b",
+            "[prompt]"
+          ],
+          "appPath": "benches/solar-system/runs/fable-5--20260711-0732/app/index.html",
+          "screenshotPath": "benches/solar-system/runs/fable-5--20260711-0732/screenshot.png",
+          "redactions": 24,
+          "displayName": "Fable 5",
+          "vendor": "Anthropic",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/solar-system/runs/fable-5--20260711-0732/transcript.jsonl"
         },
         {
           "runId": "gpt-5.6-sol--20260711-0732",

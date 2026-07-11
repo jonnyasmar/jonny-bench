@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Space Kids! 🌞 Explore the Solar System</title>
+  <meta name="description" content="A fun, talking solar system explorer for kids — games, quizzes, and space facts!" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <header id="topbar">
+    <button id="backBtn" class="chip-btn hidden" aria-label="Go back">⬅️ Back</button>
+    <div id="screenTitle"></div>
+    <div id="starCount" title="Stars you have earned">⭐ <span id="starNum">0</span></div>
+    <button id="soundBtn" class="chip-btn" aria-label="Sound on or off">🔊</button>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HOME ============ -->
+    <section id="screen-home" class="screen">
+      <h1 class="home-title"><span class="wiggle">🌞</span> Space Kids! <span class="wiggle d2">🚀</span></h1>
+      <p class="home-sub">Blast off and become a <b>Solar System Expert!</b></p>
+      <div class="menu">
+        <button class="menu-btn m-explore" data-go="explore">
+          <span class="menu-emoji">🪐</span><span class="menu-label">Explore Space</span>
+          <span class="menu-desc">Tap the planets!</span>
+        </button>
+        <button class="menu-btn m-tour" data-go="tour">
+          <span class="menu-emoji">🚀</span><span class="menu-label">Grand Tour</span>
+          <span class="menu-desc">Ride past every planet!</span>
+        </button>
+        <button class="menu-btn m-order" data-go="order">
+          <span class="menu-emoji">🧩</span><span class="menu-label">Planet Parade</span>
+          <span class="menu-desc">Put them in order!</span>
+        </button>
+        <button class="menu-btn m-quiz" data-go="quiz">
+          <span class="menu-emoji">❓</span><span class="menu-label">Space Quiz</span>
+          <span class="menu-desc">Win stars!</span>
+        </button>
+        <button class="menu-btn m-sizes" data-go="sizes">
+          <span class="menu-emoji">🐘</span><span class="menu-label">Big &amp; Small</span>
+          <span class="menu-desc">Who is the biggest?</span>
+        </button>
+        <button class="menu-btn m-stickers" data-go="stickers">
+          <span class="menu-emoji">🏆</span><span class="menu-label">My Stickers</span>
+          <span class="menu-desc">Your prizes!</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ EXPLORE (orbit map) ============ -->
+    <section id="screen-explore" class="screen hidden">
+      <div id="orbitMap"></div>
+      <div class="explore-hint" id="exploreHint">👆 Tap a planet to learn about it!</div>
+      <button id="tourBtn" class="big-btn tour-float">🚀 Grand Tour</button>
+    </section>
+
+    <!-- ============ ORDER GAME ============ -->
+    <section id="screen-order" class="screen hidden">
+      <p class="game-prompt" id="orderPrompt">Put the planets in order from the Sun! ☀️ Which one is <b>closest</b>?</p>
+      <div id="orderTrack"></div>
+      <div id="orderBank"></div>
+      <div id="orderDone" class="hidden">
+        <div id="mnemonicBox"></div>
+        <div class="row-center">
+          <button id="orderAgain" class="big-btn">🔁 Play again</button>
+          <button id="orderHome" class="big-btn alt">🏠 Home</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ QUIZ ============ -->
+    <section id="screen-quiz" class="screen hidden">
+      <div id="quizProgress"></div>
+      <div id="quizPlay">
+        <div class="quiz-q">
+          <button id="quizSpeak" class="chip-btn" aria-label="Read the question again">🔊</button>
+          <span id="quizQText"></span>
+        </div>
+        <div id="quizChoices"></div>
+      </div>
+      <div id="quizEnd" class="hidden">
+        <div id="quizScoreBig"></div>
+        <div id="quizScoreMsg"></div>
+        <div class="row-center">
+          <button id="quizAgain" class="big-btn">🔁 Play again</button>
+          <button id="quizHome" class="big-btn alt">🏠 Home</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SIZES ============ -->
+    <section id="screen-sizes" class="screen hidden">
+      <div class="sizes-controls">
+        <button id="sortDist" class="chip-btn sort-btn on">🌞 Space order</button>
+        <button id="sortSize" class="chip-btn sort-btn">🐘 Biggest first</button>
+      </div>
+      <div id="sizesStrip"></div>
+      <p class="sizes-caption" id="sizesCaption">👆 Tap a planet to hear about its size — these are their <b>real</b> sizes compared to each other! 👉 Slide to see them all!</p>
+    </section>
+
+    <!-- ============ STICKERS ============ -->
+    <section id="screen-stickers" class="screen hidden">
+      <p class="game-prompt">Win stickers by playing! Can you collect them <b>all</b>?</p>
+      <div id="stickerGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- ============ PLANET DETAIL MODAL ============ -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card" id="modalCard">
+      <button id="modalClose" class="chip-btn modal-close" aria-label="Close">✕</button>
+      <button id="tourStop" class="chip-btn tour-stop hidden">🛑 Stop tour</button>
+      <div class="planet-stage"><div id="modalBallHolder"></div></div>
+      <h2 id="modalName"></h2>
+      <div id="modalTagline"></div>
+      <div id="modalOrderPill"></div>
+      <ul id="modalFacts"></ul>
+      <div class="modal-nav">
+        <button id="modalPrev" class="round-btn" aria-label="Previous">⬅️</button>
+        <button id="modalRead" class="big-btn">🔊 Read to me!</button>
+        <button id="modalNext" class="round-btn" aria-label="Next">➡️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- badge unlock toast -->
+  <div id="toast" class="hidden"></div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script src="./data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
