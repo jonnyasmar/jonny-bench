@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-11T11:53:46.972Z",
+  "generatedAt": "2026-07-16T11:27:50.704Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -520,6 +520,15 @@
           "transcriptPath": "benches/solar-system/runs/grok-4.5--20260711-0732/transcript.jsonl"
         }
       ]
+    },
+    {
+      "slug": "world-cup-60",
+      "title": "The 2026 World Cup so far, in 60 seconds",
+      "prompt": "Produce a beautiful visualization that summarizes the entire 2026 World Cup tournament so far in 60 seconds.\n\nRequirements:\n\n- Pure client-side. The finished product must be a static site: an index.html at the repo root (or in dist/ if you use a build step) that works with no server-side code.\n\nYou have one shot: when you stop, whatever is in the repo is the submission.",
+      "sharedInstructions": "# jonny-bench: global instructions\n\nThese rules apply to every bench in this repo, on top of the specific bench prompt below. They exist so you don't have to guess at the environment your submission runs in or gets evaluated in.\n\n## Deployment environment\n\nYour finished submission is published as a static site nested under a subdirectory path (e.g. `https://jonnyasmar.github.io/jonny-bench/benches/<slug>/runs/<run-id>/app/`), not the domain root, with no server-side routing or rewrites.\n\n- Use relative asset paths only (`./assets/foo.js`, `assets/foo.css`). Never use root-absolute paths (`/assets/foo.js`) — they resolve fine in local dev or when served from a server's root, but 404 once nested under a subdirectory.\n- If you use a bundler (Vite, webpack, esbuild, etc.), set its base/public-path option to relative (e.g. Vite's `base: './'`) so the build works from any subdirectory, not just the root.\n- Verify your build by opening its `index.html` from a nested folder, or via `file://`, not only through a dev server bound to `/`.\n",
+      "capMinutes": 90,
+      "suggestedBy": null,
+      "runs": []
     }
   ]
 }
