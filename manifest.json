@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T11:45:26.246Z",
+  "generatedAt": "2026-07-16T12:36:42.751Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -657,6 +657,45 @@
           "flagship": true,
           "rank": 1,
           "transcriptPath": "benches/world-cup-60/runs/gpt-5.6-sol--20260716-0735/transcript.jsonl"
+        },
+        {
+          "runId": "fable-5--20260716-0732",
+          "bench": "world-cup-60",
+          "model": "fable-5",
+          "effort": "high",
+          "cli": "claude-code",
+          "cliVersion": "2.1.211 (Claude Code)",
+          "startedAt": "2026-07-16T11:32:47.067Z",
+          "wallSeconds": 3833,
+          "rootAbsolutePaths": [],
+          "totalTokens": 9411749,
+          "totalCostUsd": 21.527835,
+          "estimatedCostUsd": null,
+          "usage": null,
+          "status": "failed",
+          "exitReason": "error",
+          "argv": [
+            "-p",
+            "--model",
+            "claude-fable-5",
+            "--effort",
+            "high",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--dangerously-skip-permissions",
+            "--session-id",
+            "5ab7f472-6c05-432e-8904-ff23a3afbc18",
+            "[prompt]"
+          ],
+          "appPath": "benches/world-cup-60/runs/fable-5--20260716-0732/app/index.html",
+          "screenshotPath": "benches/world-cup-60/runs/fable-5--20260716-0732/screenshot.png",
+          "redactions": 20,
+          "displayName": "Fable 5",
+          "vendor": "Anthropic",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/world-cup-60/runs/fable-5--20260716-0732/transcript.jsonl"
         }
       ]
     }

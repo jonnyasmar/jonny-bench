@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The 2026 World Cup, in 60 seconds</title>
+<meta name="description" content="A 60-second visual story of the 2026 FIFA World Cup so far — groups, the knockout bracket, records and the Golden Boot race, through the semifinals (updated July 16, 2026).">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<style>
+  :root { color-scheme: light dark; }
+
+  .viz-root {
+    color-scheme: light;
+    --surface-1:   #fcfcfb;
+    --page:        #f9f9f7;
+    --ink:         #0b0b0b;
+    --ink-2:       #52514e;
+    --muted:       #898781;
+    --grid:        #e1e0d9;
+    --baseline:    #c3c2b7;
+    --border:      rgba(11,11,11,0.10);
+    --accent:      #2a78d6;   /* categorical slot 1 */
+    --accent-soft: rgba(42,120,214,0.10);
+    --deemph:      #c3c2b7;   /* de-emphasis bar gray */
+    --upset:       #eb6834;   /* categorical slot 6, flags upsets */
+    --tip-bg:      #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:   #1a1a19;
+      --page:        #0d0d0d;
+      --ink:         #ffffff;
+      --ink-2:       #c3c2b7;
+      --muted:       #898781;
+      --grid:        #2c2c2a;
+      --baseline:    #383835;
+      --border:      rgba(255,255,255,0.10);
+      --accent:      #3987e5;
+      --accent-soft: rgba(57,135,229,0.14);
+      --deemph:      #4a4a47;
+      --upset:       #d95926;
+      --tip-bg:      #242423;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:   #1a1a19;
+    --page:        #0d0d0d;
+    --ink:         #ffffff;
+    --ink-2:       #c3c2b7;
+    --muted:       #898781;
+    --grid:        #2c2c2a;
+    --baseline:    #383835;
+    --border:      rgba(255,255,255,0.10);
+    --accent:      #3987e5;
+    --accent-soft: rgba(57,135,229,0.14);
+    --deemph:      #4a4a47;
+    --upset:       #d95926;
+    --tip-bg:      #242423;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+  }
+  .viz-root {
+    color: var(--ink);
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    background: var(--page);
+    padding: 12px clamp(10px, 2.5vw, 28px) 14px;
+    gap: 10px;
+  }
+
+  /* ---------- header ---------- */
+  .top {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; row-gap: 6px;
+    font-size: 13px; color: var(--ink-2);
+  }
+  .top .brand { font-weight: 650; color: var(--ink); letter-spacing: .01em; }
+  .top .asof { color: var(--muted); }
+  .top .spacer { flex: 1; }
+  button.chip {
+    font: inherit; font-size: 12.5px; color: var(--ink-2);
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 12px; cursor: pointer;
+  }
+  button.chip:hover { color: var(--ink); border-color: var(--baseline); }
+  button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- stage ---------- */
+  .stage {
+    position: relative; flex: 1; min-height: 540px;
+    background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden;
+  }
+  .stage::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(90% 55% at 50% -10%, var(--accent-soft), transparent 70%);
+  }
+  .scene {
+    position: absolute; inset: 0;
+    padding: clamp(16px, 3.5vh, 34px) clamp(16px, 3vw, 40px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: 8px;
+    visibility: hidden; opacity: 0;
+    transition: opacity .5s ease, visibility 0s linear .5s;
+  }
+  .scene.active { visibility: visible; opacity: 1; transition: opacity .5s ease; }
+  @media (max-width: 760px), (max-height: 620px) {
+    .scene { justify-content: flex-start; overflow-y: auto; }
+  }
+
+  /* reveal primitive */
+  .rev { opacity: 0; transform: translateY(14px); transition: opacity .55s ease, transform .55s ease; }
+  .rev.on { opacity: 1; transform: none; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+  h1 { font-size: clamp(26px, 4.6vw, 46px); line-height: 1.08; margin: 4px 0 0; font-weight: 750; letter-spacing: -.015em; }
+  h1 .lite { color: var(--ink-2); font-weight: 500; }
+  h2 { font-size: clamp(19px, 2.6vw, 27px); margin: 2px 0 0; font-weight: 700; letter-spacing: -.01em; }
+  .caption { font-size: clamp(13px, 1.5vw, 15.5px); color: var(--ink-2); max-width: 760px; line-height: 1.45; }
+  .footnote { font-size: 11.5px; color: var(--muted); }
+
+  /* ---------- scene 0: kickoff ---------- */
+  .hero { margin: 6px 0 2px; }
+  .hero-num {
+    display: block; font-size: clamp(64px, 13vh, 118px); font-weight: 760;
+    letter-spacing: -.03em; line-height: 1; color: var(--ink);
+    font-variant-numeric: normal;
+  }
+  .hero-lab { display: block; margin-top: 6px; font-size: clamp(14px, 1.8vw, 17px); color: var(--ink-2); }
+  .tiles { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+  .tile {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 18px; min-width: 150px; text-align: left;
+  }
+  .tile .t-lab { font-size: 11.5px; color: var(--muted); letter-spacing: .04em; }
+  .tile .t-val { font-size: 26px; font-weight: 700; letter-spacing: -.01em; margin-top: 2px; }
+  .tile .t-sub { font-size: 11.5px; color: var(--ink-2); margin-top: 3px; }
+
+  /* ---------- scene 1: groups ---------- */
+  .groups {
+    display: grid; grid-template-columns: repeat(6, minmax(130px, 168px));
+    gap: 10px; margin-top: 14px; justify-content: center; width: 100%;
+  }
+  @media (max-width: 1080px) { .groups { grid-template-columns: repeat(4, minmax(130px, 172px)); } }
+  @media (max-width: 720px)  { .groups { grid-template-columns: repeat(3, minmax(104px, 1fr)); gap: 7px; } }
+  .gcard {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 10px 9px; text-align: left; cursor: default;
+  }
+  .ghead { font-size: 10.5px; letter-spacing: .14em; color: var(--muted); font-weight: 650; margin-bottom: 5px; }
+  .grow { display: flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 2px 0; color: var(--ink-2); }
+  .grow.w { color: var(--ink); font-weight: 650; }
+  .grow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+  .grow .g3 {
+    flex: none; font-size: 9px; font-weight: 700; letter-spacing: .05em; color: var(--ink-2);
+    border: 1px solid var(--baseline); border-radius: 4px; padding: 0 3px;
+  }
+  .grow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .grow .pt { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .grow .flg { flex: none; }
+
+  /* ---------- scene 2: bracket ---------- */
+  .bracket-wrap { width: 100%; margin-top: 10px; overflow-x: auto; overflow-y: hidden; }
+  .bsizer { margin: 0 auto; overflow: hidden; }
+  .bracket {
+    display: grid; grid-template-columns: repeat(4, 132px) 190px repeat(4, 132px);
+    gap: 10px; width: 1326px; height: 560px;
+    transform-origin: top left; text-align: left;
+  }
+  .bcol { display: flex; flex-direction: column; min-width: 0; }
+  .bhead { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 650; text-align: center; padding-bottom: 6px; white-space: nowrap; }
+  .bcells { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; }
+  .match {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 8px; cursor: default; position: relative;
+  }
+  .match.upset { border-left: 3px solid var(--upset); }
+  .match:hover, .match:focus-visible { border-color: var(--baseline); }
+  .mrow { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); line-height: 1.45; }
+  .mrow.win { color: var(--ink); font-weight: 650; }
+  .mrow .cd { letter-spacing: .02em; }
+  .mrow .sc { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .mx { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .fcard {
+    background: var(--surface-1); border: 1.5px solid var(--accent); border-radius: 12px;
+    padding: 12px 12px 10px; text-align: center;
+  }
+  .fcard .fx { font-size: 10px; letter-spacing: .14em; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+  .fcard .frow { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 15px; font-weight: 700; padding: 3px 0; }
+  .fcard .fv { font-size: 11px; color: var(--muted); margin: 2px 0; }
+  .fcard .fw { font-size: 11px; color: var(--ink-2); margin-top: 7px; }
+  .bronze { margin-top: 12px; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.5; }
+  .bkey { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .bkey .uk { display: inline-block; width: 8px; height: 8px; background: var(--upset); border-radius: 2px; vertical-align: baseline; margin-right: 3px; }
+
+  /* ---------- bars (records + golden boot) ---------- */
+  .charts3 { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 14px; width: 100%; }
+  .rchart {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; width: min(330px, 100%); text-align: left;
+  }
+  .rchart h3 { margin: 0 0 10px; font-size: 13px; font-weight: 650; color: var(--ink); line-height: 1.3; }
+  .rchart h3 small { display: block; font-weight: 500; color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .brow { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 8px; padding: 4px 0; }
+  .brow .blab { font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 5px; align-items: center; }
+  .brow.em .blab { color: var(--ink); font-weight: 650; }
+  .track { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .subtrack { flex: 1; min-width: 0; }
+  .bar {
+    display: block; height: 14px; width: 0; border-radius: 0 4px 4px 0; background: var(--deemph);
+    transition: width .9s cubic-bezier(.22,.61,.36,1);
+  }
+  .bval { flex: none; }
+  .brow.em .bar { background: var(--accent); }
+  .brow.on .bar { width: var(--w); }
+  .bval { font-size: 12px; color: var(--ink-2); font-weight: 600; opacity: 0; transition: opacity .5s ease .35s; white-space: nowrap; }
+  .brow.on .bval { opacity: 1; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 16px; max-width: min(880px, 100%); }
+  .chip-f {
+    font-size: 12px; color: var(--ink-2); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 999px; padding: 6px 13px;
+  }
+  .chip-f b { color: var(--ink); font-weight: 650; }
+
+  /* golden boot */
+  .boot { width: min(660px, 94%); margin-top: 12px; text-align: left; }
+  .boot .brow { grid-template-columns: 150px 1fr; }
+  @media (max-width: 560px) { .boot .brow { grid-template-columns: 108px 1fr; } }
+  .legend { display: flex; gap: 18px; justify-content: center; margin-top: 12px; font-size: 12px; color: var(--ink-2); }
+  .legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: baseline; }
+
+  /* ---------- scene 5: final ---------- */
+  .versus {
+    display: flex; align-items: center; gap: clamp(14px, 4vw, 44px); margin: 10px 0 4px;
+  }
+  .vteam { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .vteam .vf { font-size: clamp(44px, 9vh, 76px); line-height: 1; }
+  .vteam .vn { font-size: clamp(17px, 2.4vw, 25px); font-weight: 750; letter-spacing: -.01em; }
+  .vteam .vs { font-size: 11.5px; color: var(--muted); max-width: 190px; }
+  .vmid { font-size: clamp(14px, 2vw, 19px); color: var(--muted); font-weight: 500; }
+
+  /* ---------- transport ---------- */
+  .transport { display: flex; align-items: center; gap: 12px; }
+  .pbtn {
+    font: inherit; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--ink); cursor: pointer; font-size: 15px; flex: none;
+  }
+  .pbtn:hover { border-color: var(--baseline); }
+  .scrub { flex: 1; display: flex; gap: 3px; cursor: pointer; touch-action: none; padding: 6px 0; }
+  .seg { position: relative; height: 26px; border-radius: 6px; background: var(--surface-1); border: 1px solid var(--border); overflow: hidden; }
+  .seg .segfill { position: absolute; inset: 0; width: 0%; background: var(--accent-soft); border-right: 2px solid var(--accent); }
+  .seg .seglab {
+    position: absolute; inset: 0; display: flex; align-items: center; padding-left: 8px;
+    font-size: 10.5px; color: var(--ink-2); letter-spacing: .03em; white-space: nowrap; pointer-events: none;
+  }
+  @media (max-width: 760px) { .seg .seglab { display: none; } }
+  .clock { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
+  .hint { text-align: center; font-size: 11px; color: var(--muted); }
+
+  /* ---------- tooltip ---------- */
+  #tip {
+    position: fixed; z-index: 40; max-width: 320px; pointer-events: none;
+    background: var(--tip-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 12px; font-size: 12px; line-height: 1.5; color: var(--ink-2);
+    box-shadow: 0 6px 24px rgba(0,0,0,.14); display: none; text-align: left;
+  }
+  #tip .t1 { color: var(--muted); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+  #tip .t2 { color: var(--ink); font-weight: 650; font-size: 13px; margin: 2px 0; }
+  #tip .t3 { color: var(--ink-2); }
+  #tip .t4 { color: var(--ink-2); font-style: italic; margin-top: 3px; }
+
+  /* ---------- data panel ---------- */
+  #panel {
+    position: absolute; inset: 0; z-index: 30; background: var(--surface-1);
+    border-radius: 16px; padding: clamp(16px, 3vw, 32px); overflow: auto; display: none; text-align: left;
+  }
+  #panel.open { display: block; }
+  #panel h2 { font-size: 20px; margin: 0 0 4px; }
+  #panel h3 { font-size: 14px; margin: 22px 0 8px; }
+  #panel table { border-collapse: collapse; width: 100%; max-width: 880px; font-size: 12.5px; }
+  #panel th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); }
+  #panel td { padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); color: var(--ink-2); vertical-align: top; }
+  #panel td.strong { color: var(--ink); font-weight: 600; }
+  #panel td.num { font-variant-numeric: tabular-nums; }
+  #panel .close { position: sticky; top: 0; float: right; }
+  #panel ul { margin: 6px 0; padding-left: 18px; color: var(--ink-2); font-size: 12.5px; line-height: 1.6; }
+  #panel .footnote { margin-top: 18px; max-width: 760px; line-height: 1.5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rev, .scene, .bar, .bval, .seg .segfill { transition-duration: .01s !important; }
+  }
+</style>
+</head>
+<body>
+<div class="viz-root" id="app">
+  <header class="top">
+    <span class="brand">⚽ The 2026 World Cup, in 60 seconds</span>
+    <span class="asof">through the semifinals · Jul 16, 2026</span>
+    <span class="spacer"></span>
+    <button class="chip" id="dataBtn" aria-pressed="false">▤ Data & sources</button>
+    <button class="chip" id="themeBtn" aria-label="Toggle color theme">◐ Theme</button>
+  </header>
+
+  <main class="stage" id="stage" aria-label="Animated 60-second summary of the 2026 World Cup">
+    <noscript><p style="padding:40px;text-align:center">This visualization needs JavaScript. All underlying data is described in the page source.</p></noscript>
+    <aside id="panel" aria-label="Data tables and sources"></aside>
+  </main>
+
+  <footer class="transport">
+    <button class="pbtn" id="playBtn" aria-label="Pause">❚❚</button>
+    <div class="scrub" id="scrub" aria-label="Timeline scrubber"></div>
+    <span class="clock" id="clock">0:00 / 1:00</span>
+  </footer>
+  <div class="hint">space — play/pause · ← → — scenes · hover or focus any mark for detail · ▤ for every table</div>
+
+  <div id="tip" aria-hidden="true"></div>
+</div>
+
+<script>
+"use strict";
+/* =============================================================
+   DATA — compiled July 16, 2026 (through the July 14–15 semifinals)
+   Sources: Wikipedia, FIFA.com, ESPN, Goal.com, FOX/NBC — see panel.
+   ============================================================= */
+const TEAMS = {
+  GER:["Germany","🇩🇪"], PAR:["Paraguay","🇵🇾"], FRA:["France","🇫🇷"], SWE:["Sweden","🇸🇪"],
+  RSA:["South Africa","🇿🇦"], CAN:["Canada","🇨🇦"], NED:["Netherlands","🇳🇱"], MAR:["Morocco","🇲🇦"],
+  POR:["Portugal","🇵🇹"], CRO:["Croatia","🇭🇷"], ESP:["Spain","🇪🇸"], AUT:["Austria","🇦🇹"],
+  USA:["United States","🇺🇸"], BIH:["Bosnia & Herzegovina","🇧🇦","Bosnia-Herz."], BEL:["Belgium","🇧🇪"], SEN:["Senegal","🇸🇳"],
+  BRA:["Brazil","🇧🇷"], JPN:["Japan","🇯🇵"], CIV:["Ivory Coast","🇨🇮"], NOR:["Norway","🇳🇴"],
+  MEX:["Mexico","🇲🇽"], ECU:["Ecuador","🇪🇨"], ENG:["England","🏴󠁧󠁢󠁥󠁮󠁧󠁿"], COD:["DR Congo","🇨🇩"],
+  ARG:["Argentina","🇦🇷"], CPV:["Cape Verde","🇨🇻"], AUS:["Australia","🇦🇺"], EGY:["Egypt","🇪🇬"],
+  SUI:["Switzerland","🇨🇭"], ALG:["Algeria","🇩🇿"], COL:["Colombia","🇨🇴"], GHA:["Ghana","🇬🇭"],
+  KOR:["South Korea","🇰🇷"], CZE:["Czechia","🇨🇿"], QAT:["Qatar","🇶🇦"], SCO:["Scotland","🏴󠁧󠁢󠁳󠁣󠁴󠁿"],
+  HAI:["Haiti","🇭🇹"], TUR:["Türkiye","🇹🇷"], CUW:["Curaçao","🇨🇼"], TUN:["Tunisia","🇹🇳"],
+  IRN:["Iran","🇮🇷"], NZL:["New Zealand","🇳🇿"], URU:["Uruguay","🇺🇾"], KSA:["Saudi Arabia","🇸🇦"],
+  IRQ:["Iraq","🇮🇶"], JOR:["Jordan","🇯🇴"], UZB:["Uzbekistan","🇺🇿"], PAN:["Panama","🇵🇦"]
+};
+const nm = c => TEAMS[c][0], fl = c => TEAMS[c][1], sh = c => TEAMS[c][2] || TEAMS[c][0];
+
+const ROUNDS = { R32:"Round of 32", R16:"Round of 16", QF:"Quarterfinal", SF:"Semifinal" };
+
+/* Knockout matches in bracket order. win: 'a'|'b'. */
+const KO = {
+  r32L: [
+    {a:"GER",b:"PAR",sa:1,sb:1,pens:"3–4",win:"b",upset:true,date:"Jun 29",venue:"Gillette Stadium, Foxborough",gl:"Enciso (PAR); Havertz (GER)",note:"Germany's first-ever World Cup shootout defeat. Paraguay declared a national holiday."},
+    {a:"FRA",b:"SWE",sa:3,sb:0,win:"a",date:"Jun 30",venue:"MetLife Stadium, East Rutherford",gl:"Mbappé 45′ 74′, Barcola 53′"},
+    {a:"RSA",b:"CAN",sa:0,sb:1,win:"b",date:"Jun 28",venue:"SoFi Stadium, Inglewood",gl:"Eustáquio 90+2′",note:"Canada's first World Cup knockout win — in the tournament's first knockout match."},
+    {a:"NED",b:"MAR",sa:1,sb:1,pens:"2–3",win:"b",upset:true,date:"Jun 29",venue:"Estadio BBVA, Monterrey",note:"Group F winners Netherlands out on penalties."},
+    {a:"POR",b:"CRO",sa:2,sb:1,win:"a",date:"Jul 2",venue:"BMO Field, Toronto",note:"2018 finalists Croatia eliminated."},
+    {a:"ESP",b:"AUT",sa:3,sb:0,win:"a",date:"Jul 2",venue:"SoFi Stadium, Inglewood"},
+    {a:"USA",b:"BIH",sa:2,sb:0,win:"a",date:"Jul 1",venue:"Levi's Stadium, Santa Clara"},
+    {a:"BEL",b:"SEN",sa:3,sb:2,aet:true,win:"a",date:"Jul 1",venue:"Lumen Field, Seattle",gl:"Diarra 25′, Sarr 51′; Lukaku 86′, Tielemans 89′, 120+5′ pen",note:"The 120+5′ penalty is the latest goal in World Cup history."}
+  ],
+  r32R: [
+    {a:"BRA",b:"JPN",sa:2,sb:1,win:"a",date:"Jun 29",venue:"NRG Stadium, Houston",gl:"Sano 29′; Casemiro 56′, Martinelli 90+5′"},
+    {a:"CIV",b:"NOR",sa:1,sb:2,win:"b",date:"Jun 30",venue:"AT&T Stadium, Arlington",gl:"Diallo 74′; Nusa 39′, Haaland 86′"},
+    {a:"MEX",b:"ECU",sa:2,sb:0,win:"a",date:"Jun 30",venue:"Estadio Azteca, Mexico City"},
+    {a:"ENG",b:"COD",sa:2,sb:1,win:"a",date:"Jul 1",venue:"Mercedes-Benz Stadium, Atlanta"},
+    {a:"ARG",b:"CPV",sa:3,sb:2,aet:true,win:"a",date:"Jul 3",venue:"Hard Rock Stadium, Miami Gardens",gl:"Messi 29′, L. Martínez 92′, o.g. 111′; Duarte 59′, Lopes Cabral 103′",note:"Cape Verde — smallest nation ever at a World Cup — pushed the champions deep into extra time."},
+    {a:"AUS",b:"EGY",sa:1,sb:1,pens:"2–4",win:"b",date:"Jul 3",venue:"AT&T Stadium, Arlington"},
+    {a:"SUI",b:"ALG",sa:2,sb:0,win:"a",date:"Jul 2",venue:"BC Place, Vancouver"},
+    {a:"COL",b:"GHA",sa:1,sb:0,win:"a",date:"Jul 3",venue:"Arrowhead Stadium, Kansas City"}
+  ],
+  r16L: [
+    {a:"PAR",b:"FRA",sa:0,sb:1,win:"b",date:"Jul 4",venue:"Lincoln Financial Field, Philadelphia",gl:"Mbappé 70′ pen"},
+    {a:"CAN",b:"MAR",sa:0,sb:3,win:"b",date:"Jul 4",venue:"NRG Stadium, Houston",gl:"Ounahi 50′ 82′, Rahimi 90+8′"},
+    {a:"POR",b:"ESP",sa:0,sb:1,win:"b",date:"Jul 6",venue:"AT&T Stadium, Arlington",gl:"Merino 90+1′"},
+    {a:"USA",b:"BEL",sa:1,sb:4,win:"b",date:"Jul 6",venue:"Lumen Field, Seattle",gl:"Tillman 31′; De Ketelaere 9′ 33′, Vanaken 57′, Lukaku 90+3′",note:"The last host standing went out here."}
+  ],
+  r16R: [
+    {a:"BRA",b:"NOR",sa:1,sb:2,win:"b",upset:true,date:"Jul 5",venue:"MetLife Stadium, East Rutherford",gl:"Neymar 90+10′ pen; Haaland 79′ 90′",note:"Haaland's brace sent Brazil home; Neymar's penalty was his first Brazil goal in ~3 years."},
+    {a:"MEX",b:"ENG",sa:2,sb:3,win:"b",date:"Jul 5",venue:"Estadio Azteca, Mexico City",gl:"Quiñones 42′, Jiménez 69′ pen; Bellingham 36′ 38′, Kane 60′ pen",note:"Best host run ended at the Azteca."},
+    {a:"ARG",b:"EGY",sa:3,sb:2,win:"a",date:"Jul 7",venue:"Mercedes-Benz Stadium, Atlanta",gl:"Ibrahim 15′, Ziko 67′; Romero 79′, Messi 83′, E. Fernández 90+2′",note:"Enzo Fernández scored the 3,000th goal in World Cup history."},
+    {a:"SUI",b:"COL",sa:0,sb:0,pens:"4–3",win:"a",date:"Jul 7",venue:"BC Place, Vancouver"}
+  ],
+  qfL: [
+    {a:"FRA",b:"MAR",sa:2,sb:0,win:"a",date:"Jul 9",venue:"Gillette Stadium, Foxborough",gl:"Mbappé 60′, Dembélé 66′"},
+    {a:"ESP",b:"BEL",sa:2,sb:1,win:"a",date:"Jul 10",venue:"SoFi Stadium, Inglewood",gl:"Fabián 30′, Merino 88′; De Ketelaere 41′",note:"De Ketelaere's goal ended Unai Simón's record 650-minute clean-sheet streak."}
+  ],
+  qfR: [
+    {a:"NOR",b:"ENG",sa:1,sb:2,aet:true,win:"b",date:"Jul 11",venue:"Hard Rock Stadium, Miami Gardens",gl:"Schjelderup 36′; Bellingham 45+2′, 93′",note:"Bellingham's extra-time winner ended Norway's run."},
+    {a:"ARG",b:"SUI",sa:3,sb:1,aet:true,win:"a",date:"Jul 11",venue:"Arrowhead Stadium, Kansas City",gl:"Mac Allister 10′, Álvarez 112′, L. Martínez 120+1′; Ndoye 67′"}
+  ],
+  sfL: {a:"FRA",b:"ESP",sa:0,sb:2,win:"b",date:"Jul 14",venue:"AT&T Stadium, Arlington",gl:"Oyarzabal 22′ pen, Pedro Porro 58′",note:"Spain — still unbeaten — into a first final since 2010."},
+  sfR: {a:"ENG",b:"ARG",sa:1,sb:2,win:"b",date:"Jul 15",venue:"Mercedes-Benz Stadium, Atlanta",gl:"Gordon 55′; E. Fernández 85′, L. Martínez 90+2′ — both assisted by Messi",note:"A late comeback puts Argentina in back-to-back finals."}
+};
+const ALL_KO = [
+  ...KO.r32L.map(m=>({r:"R32",...m})), ...KO.r32R.map(m=>({r:"R32",...m})),
+  ...KO.r16L.map(m=>({r:"R16",...m})), ...KO.r16R.map(m=>({r:"R16",...m})),
+  ...KO.qfL.map(m=>({r:"QF",...m})),  ...KO.qfR.map(m=>({r:"QF",...m})),
+  {r:"SF",...KO.sfL}, {r:"SF",...KO.sfR}
+];
+
+/* Groups: [team, pts, flag] flag: 'w' winner · 'r' runner-up · '3' third, advanced · '' out */
+const GROUPS = [
+  ["A",[["MEX",9,"w"],["RSA",4,"r"],["KOR",3,""],["CZE",1,""]]],
+  ["B",[["SUI",7,"w"],["CAN",4,"r"],["BIH",4,"3"],["QAT",1,""]]],
+  ["C",[["BRA",7,"w"],["MAR",7,"r"],["SCO",3,""],["HAI",0,""]]],
+  ["D",[["USA",6,"w"],["AUS",4,"r"],["PAR",4,"3"],["TUR",3,""]]],
+  ["E",[["GER",6,"w"],["CIV",6,"r"],["ECU",4,"3"],["CUW",1,""]]],
+  ["F",[["NED",7,"w"],["JPN",5,"r"],["SWE",4,"3"],["TUN",0,""]]],
+  ["G",[["BEL",5,"w"],["EGY",5,"r"],["IRN",3,""],["NZL",1,""]]],
+  ["H",[["ESP",7,"w"],["CPV",3,"r"],["URU",2,""],["KSA",1,""]]],
+  ["I",[["FRA",9,"w"],["NOR",6,"r"],["SEN",3,"3"],["IRQ",0,""]]],
+  ["J",[["ARG",9,"w"],["AUT",4,"r"],["ALG",4,"3"],["JOR",0,""]]],
+  ["K",[["COL",7,"w"],["POR",5,"r"],["COD",4,"3"],["UZB",0,""]]],
+  ["L",[["ENG",7,"w"],["CRO",6,"r"],["GHA",4,"3"],["PAN",0,""]]]
+];
+
+const SCORERS = [
+  {n:"Messi",      full:"Lionel Messi",   t:"ARG", g:8, alive:true,  s:"Plays the final · leads the tiebreak with 3 assists"},
+  {n:"Mbappé",     full:"Kylian Mbappé",  t:"FRA", g:8, alive:true,  s:"Third-place match remaining"},
+  {n:"Haaland",    full:"Erling Haaland", t:"NOR", g:7, alive:false, s:"Out in the quarterfinals — brace v Brazil"},
+  {n:"Kane",       full:"Harry Kane",     t:"ENG", g:6, alive:true,  s:"Third-place match remaining"},
+  {n:"Bellingham", full:"Jude Bellingham",t:"ENG", g:6, alive:true,  s:"Extra-time QF winner v Norway"},
+  {n:"Dembélé",    full:"Ousmane Dembélé",t:"FRA", g:5, alive:true,  s:"Reigning Ballon d'Or holder · 2 assists"},
+  {n:"Oyarzabal",  full:"Mikel Oyarzabal",t:"ESP", g:5, alive:true,  s:"Plays the final · scored in the semi"},
+  {n:"Vinícius Jr",full:"Vinícius Júnior",t:"BRA", g:4, alive:false, s:"Out in the round of 16"}
+];
+const SCORERS_MORE = [
+  {full:"Julián Quiñones", t:"MEX", g:4}, {full:"Ismaïla Sarr", t:"SEN", g:4}
+];
+
+const RECORDS = [
+  { title:"Most career World Cup goals", sub:"Messi passed Klose's 16 — a record that stood since 2014",
+    rows:[ {l:"Messi",flag:"🇦🇷",v:21,txt:"21",em:true,tip:"21 career World Cup goals (2006–2026) — all-time record; also a record 9 straight World Cup matches scored in, and the oldest hat-trick scorer at 38."},
+           {l:"Mbappé",flag:"🇫🇷",v:19,txt:"19",em:false,tip:"19 career World Cup goals — second all-time, at age 27."},
+           {l:"Klose",flag:"🇩🇪",v:16,txt:"16",em:false,tip:"Miroslav Klose's 16 (2002–2014) — the previous all-time record."} ] },
+  { title:"Longest clean-sheet streak, minutes", sub:"Unai Simón smashed Zenga's 517′, set in 1990",
+    rows:[ {l:"Simón",flag:"🇪🇸",v:650,txt:"650′",em:true,tip:"650 consecutive World Cup minutes without conceding (2022–2026), ended by De Ketelaere in the quarterfinal."},
+           {l:"Zenga",flag:"🇮🇹",v:517,txt:"517′",em:false,tip:"Walter Zenga's 517 minutes for Italy at Italia '90 — the previous record."} ] },
+  { title:"Total attendance, millions", sub:"USA '94's all-time record nearly doubled",
+    rows:[ {l:"2026",flag:"🏟️",v:6.67,txt:"6.67M",em:true,tip:"6,665,825 through the semifinals — average 65,351 per match across 102 matches."},
+           {l:"USA '94",flag:"🇺🇸",v:3.59,txt:"3.59M",em:false,tip:"3,587,538 at USA 1994 — the record for 32 years."} ] }
+];
+const CHIPS = [
+  ["120+5′","the latest goal in World Cup history — Belgium's shootout-saving penalty v Senegal"],
+  ["3,000th","World Cup goal all-time — Enzo Fernández v Egypt"],
+  ["~525k","population of Cape Verde, the smallest nation ever to play at a World Cup"],
+  ["5 assists","Michael Olise — the most in one World Cup since 1994"]
+];
+
+/* =============================================================
+   TIMELINE — 60 seconds, six scenes
+   ============================================================= */
+const DUR = 60;
+const SCENES = [
+  {id:"kick",  label:"Kickoff",     t0:0,  t1:8},
+  {id:"grp",   label:"Groups",      t0:8,  t1:18},
+  {id:"ko",    label:"Knockout",    t0:18, t1:36},
+  {id:"rec",   label:"Records",     t0:36, t1:46},
+  {id:"boot",  label:"Golden Boot", t0:46, t1:54},
+  {id:"fin",   label:"The Final",   t0:54, t1:60}
+];
+
+/* =============================================================
+   HELPERS
+   ============================================================= */
+const $ = s => document.querySelector(s);
+function el(tag, cls, txt){ const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; }
+function rev(node, at){ node.classList.add("rev"); node.dataset.at = at; return node; }
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const easeOut = x => 1 - Math.pow(1 - x, 3);
+
+/* tooltip */
+const tip = $("#tip");
+let tipFor = null;
+function showTip(target, lines){
+  tip.replaceChildren(...lines.filter(Boolean).map(([cls, txt]) => el("div", cls, txt)));
+  tip.style.display = "block"; tipFor = target;
+  placeTip(target.getBoundingClientRect());
+}
+function placeTip(r){
+  const tw = tip.offsetWidth, th = tip.offsetHeight, vw = innerWidth, vh = innerHeight;
+  let x = r.left + r.width / 2 - tw / 2, y = r.top - th - 10;
+  x = clamp(x, 8, vw - tw - 8);
+  if (y < 8) y = clamp(r.bottom + 10, 8, vh - th - 8);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip(t){ if (!t || tipFor === t) { tip.style.display = "none"; tipFor = null; } }
+function attachTip(node, linesFn){
+  node.addEventListener("pointerenter", () => showTip(node, linesFn()));
+  node.addEventListener("pointerleave", () => hideTip(node));
+  node.addEventListener("focus", () => showTip(node, linesFn()));
+  node.addEventListener("blur", () => hideTip(node));
+  node.tabIndex = 0;
+}
+
+/* =============================================================
+   SCENE BUILDERS
+   ============================================================= */
+const stage = $("#stage");
+const sceneEls = [];
+function scene(id){ const s = el("section", "scene"); s.id = "sc-" + id; stage.insertBefore(s, $("#panel")); sceneEls.push(s); return s; }
+
+/* ---- scene 0 · kickoff ---- */
+(function(){
+  const s = scene("kick");
+  s.append(
+    rev(el("div", "eyebrow", "USA · Canada · México — June 11 → July 19, 2026"), .3),
+    (() => { const h = el("h1"); h.append("The 2026 World Cup, ", el("span", "lite", "so far — in 60 seconds")); return rev(h, .55); })()
+  );
+  const hero = el("div", "hero");
+  const num = el("span", "hero-num", "0");
+  num.dataset.count = "297"; num.dataset.t0 = "1.0"; num.dataset.t1 = "3.4";
+  hero.append(num, el("span", "hero-lab", "goals — already the highest-scoring World Cup ever played"));
+  s.append(rev(hero, .95));
+  s.append(rev(el("div", "footnote", "count per Wikipedia through the Jul 15 semifinal · other tallies say 294"), 3.6));
+  const tiles = el("div", "tiles");
+  [
+    ["Teams", "48", "the first 48-team, three-nation World Cup", "48 teams in 12 groups — up from 32 in Qatar 2022; 16 host cities across the US, Canada and Mexico."],
+    ["Matches played", "102", "of 104 — two remain", "72 group matches + 30 knockout matches so far. Left: the third-place match (Jul 18) and the final (Jul 19)."],
+    ["Goals per match", "2.91", "vs 2.69 at Qatar 2022", "297 goals over 102 matches. Qatar 2022 finished at 172 goals in 64 matches (2.69)."],
+    ["Attendance", "6.67M", "old record: 3.59M, USA '94", "6,665,825 total, averaging 65,351 a match — the 32-year-old record fell with weeks to spare."]
+  ].forEach((t, i) => {
+    const d = el("div", "tile");
+    d.append(el("div", "t-lab", t[0]), el("div", "t-val", t[1]), el("div", "t-sub", t[2]));
+    attachTip(d, () => [["t2", t[0] + ": " + t[1]], ["t3", t[3]]]);
+    tiles.append(rev(d, 4.1 + i * .5));
+  });
+  s.append(tiles);
+})();
+
+/* ---- scene 1 · groups ---- */
+(function(){
+  const s = scene("grp");
+  s.append(
+    rev(el("div", "eyebrow", "Group stage · June 11–27 · 72 matches"), 8.25),
+    rev(el("h2", null, "Twelve groups. Thirty-two survivors."), 8.45)
+  );
+  const grid = el("div", "groups");
+  GROUPS.forEach(([g, rows], i) => {
+    const c = el("div", "gcard");
+    c.append(el("div", "ghead", "GROUP " + g));
+    rows.forEach(([code, pts, f]) => {
+      if (!f) return; // card shows the three advancers; full table in tooltip + panel
+      const r = el("div", "grow" + (f === "w" ? " w" : ""));
+      if (f === "w") r.append(el("span", "dot"));
+      if (f === "3") r.append(el("span", "g3", "3rd"));
+      r.append(el("span", "flg", fl(code)), el("span", "nm", sh(code)), el("span", "pt", String(pts)));
+      c.append(r);
+    });
+    attachTip(c, () => {
+      const lines = [["t1", "Group " + g + " — final table"]];
+      rows.forEach(([code, pts, f], j) => {
+        const tag = f === "w" ? "won the group" : f === "r" ? "runner-up" : f === "3" ? "advanced as a best third" : "eliminated";
+        lines.push([f ? "t2" : "t3", (j + 1) + ".  " + nm(code) + " — " + pts + " pts · " + tag]);
+      });
+      return lines;
+    });
+    grid.append(rev(c, 8.75 + i * .42));
+  });
+  s.append(grid);
+  s.append(rev(el("p", "caption",
+    "All three hosts made the knockouts. Mexico, France and Argentina swept their groups 9-from-9. " +
+    "Italy? Missing a third straight World Cup — even with 48 places."), 14.6));
+})();
+
+/* ---- scene 2 · knockout bracket ---- */
+(function(){
+  const s = scene("ko");
+  s.append(
+    rev(el("div", "eyebrow", "Knockout stage · June 28 → July 15"), 18.2),
+    rev(el("h2", null, "Thirty-two entered. Two are left."), 18.4)
+  );
+  const wrap = el("div", "bracket-wrap");
+  const sizer = el("div", "bsizer");
+  const br = el("div", "bracket"); br.id = "bracket";
+  sizer.append(br); wrap.append(sizer); s.append(wrap);
+
+  function matchCell(m, at, round){
+    const d = el("div", "match" + (m.upset ? " upset" : ""));
+    [["a", m.sa], ["b", m.sb]].forEach(([side, sc]) => {
+      const code = m[side];
+      const r = el("div", "mrow" + (m.win === side ? " win" : ""));
+      r.append(el("span", "fl", fl(code)), el("span", "cd", code), el("span", "sc", String(sc)));
+      d.append(r);
+    });
+    if (m.aet || m.pens) d.append(el("div", "mx", m.pens ? (m.aet ? "aet · " : "") + "pens " + m.pens : "aet"));
+    attachTip(d, () => {
+      const winCode = m[m.win];
+      return [
+        ["t1", ROUNDS[round] + " · " + m.date + " · " + m.venue],
+        ["t2", nm(m.a) + " " + m.sa + "–" + m.sb + " " + nm(m.b) + (m.aet ? " (aet)" : "")],
+        m.pens ? ["t3", nm(winCode) + " won " + m.pens.split("–").sort((x,y)=>y-x).join("–") + " on penalties"] : null,
+        m.gl ? ["t3", "Goals: " + m.gl] : null,
+        m.note ? ["t4", m.note] : null
+      ];
+    });
+    return rev(d, at);
+  }
+  function col(head, headAt, cells){
+    const c = el("div", "bcol");
+    c.append(rev(el("div", "bhead", head), headAt));
+    const box = el("div", "bcells"); box.append(...cells); c.append(box);
+    return c;
+  }
+  const t32 = i => 18.8 + i * .14, t16 = i => 22.8 + i * .38, tqf = i => 26.6 + i * .55;
+  br.append(
+    col("R32 · Jun 28–Jul 3", 18.6, KO.r32L.map((m, i) => matchCell(m, t32(i), "R32"))),
+    col("R16 · Jul 4–7", 22.6, KO.r16L.map((m, i) => matchCell(m, t16(i), "R16"))),
+    col("Quarters · Jul 9–11", 26.4, KO.qfL.map((m, i) => matchCell(m, tqf(i), "QF"))),
+    col("Semis · Jul 14", 29.9, [matchCell(KO.sfL, 30.2, "SF")])
+  );
+  /* center: the final */
+  const center = el("div", "bcol");
+  center.append(rev(el("div", "bhead", "Final · Jul 19"), 32.6));
+  const cbox = el("div", "bcells");
+  const f = el("div", "fcard");
+  f.append(el("div", "fx", "THE FINAL"));
+  [["ESP"], ["ARG"]].forEach(([c]) => {
+    const r = el("div", "frow"); r.append(el("span", null, fl(c)), el("span", null, nm(c))); f.append(r);
+  });
+  const vs = f.insertBefore(el("div", "fv", "v"), f.children[2]);
+  f.append(el("div", "fw", "Sun Jul 19 · MetLife Stadium, NJ"));
+  attachTip(f, () => [
+    ["t1", "The Final · July 19 · MetLife Stadium, East Rutherford NJ"],
+    ["t2", "Spain v Argentina"],
+    ["t3", "European champions v world champions. Spain chase a first title since 2010; Argentina the first repeat since Brazil 1962."]
+  ]);
+  cbox.append(rev(f, 33.2));
+  const bz = el("div", "bronze");
+  bz.append("Bronze · Jul 18, Miami", el("br"), fl("FRA") + " France v England " + fl("ENG"));
+  cbox.append(rev(bz, 34.4));
+  center.append(cbox);
+  br.append(center);
+  br.append(
+    col("Semis · Jul 15", 29.9, [matchCell(KO.sfR, 31.0, "SF")]),
+    col("Quarters · Jul 9–11", 26.4, KO.qfR.map((m, i) => matchCell(m, tqf(i), "QF"))),
+    col("R16 · Jul 4–7", 22.6, KO.r16R.map((m, i) => matchCell(m, t16(i), "R16"))),
+    col("R32 · Jun 28–Jul 3", 18.6, KO.r32R.map((m, i) => matchCell(m, t32(i), "R32")))
+  );
+  const key = el("div", "bkey");
+  key.append(el("span", "uk"), " upset · aet — extra time · pens — shootout. Germany fell first; Norway felled Brazil; six of eight quarterfinalists were European.");
+  s.append(rev(key, 21.2));
+
+  /* scale bracket to fit */
+  const BR_W = 1326, BR_H = 560;
+  function fitBracket(){
+    const w = wrap.clientWidth || stage.clientWidth;
+    /* floor the scale for readability; below it the bracket swipes horizontally */
+    const sc = Math.max(.6, Math.min(1, w / BR_W));
+    br.style.transform = "scale(" + sc + ")";
+    sizer.style.width = Math.ceil(BR_W * sc) + "px";
+    sizer.style.height = Math.ceil(BR_H * sc) + "px";
+    wrap.style.height = Math.ceil(BR_H * sc) + "px";
+  }
+  addEventListener("resize", fitBracket);
+  requestAnimationFrame(fitBracket);
+  new ResizeObserver(fitBracket).observe(stage);
+})();
+
+/* ---- scene 3 · records ---- */
+(function(){
+  const s = scene("rec");
+  s.append(
+    rev(el("div", "eyebrow", "The record books, rewritten"), 36.2),
+    rev(el("h2", null, "Records fell everywhere."), 36.4)
+  );
+  const row = el("div", "charts3");
+  RECORDS.forEach((ch, ci) => {
+    const card = el("div", "rchart");
+    const h = el("h3", null, ch.title); h.append(el("small", null, ch.sub)); card.append(h);
+    const max = Math.max(...ch.rows.map(r => r.v));
+    ch.rows.forEach((r, ri) => {
+      const b = el("div", "brow" + (r.em ? " em" : ""));
+      const lab = el("div", "blab"); lab.append(el("span", null, r.flag), el("span", null, r.l));
+      const track = el("div", "track");
+      const st = el("span", "subtrack");
+      const bar = el("span", "bar"); bar.style.setProperty("--w", (r.v / max * 100).toFixed(1) + "%");
+      st.append(bar);
+      track.append(st, el("span", "bval", r.txt));
+      b.append(lab, track);
+      attachTip(b, () => [["t2", r.l + " — " + r.txt.split("·")[0].trim()], ["t3", r.tip]]);
+      rev(b, 37.0 + ci * 1.7 + ri * .3);
+      card.append(b);
+    });
+    row.append(rev(card, 36.8 + ci * 1.7));
+  });
+  s.append(row);
+  const chips = el("div", "chips");
+  CHIPS.forEach((c, i) => {
+    const d = el("span", "chip-f"); d.append(el("b", null, c[0]), " " + c[1]);
+    chips.append(rev(d, 42.4 + i * .5));
+  });
+  s.append(chips);
+})();
+
+/* ---- scene 4 · golden boot ---- */
+(function(){
+  const s = scene("boot");
+  s.append(
+    rev(el("div", "eyebrow", "Golden Boot · after the semifinals"), 46.2),
+    rev(el("h2", null, "Messi and Mbappé, level at eight."), 46.4)
+  );
+  const chart = el("div", "boot");
+  const max = Math.max(...SCORERS.map(p => p.g));
+  SCORERS.forEach((p, i) => {
+    const b = el("div", "brow" + (p.alive ? " em" : ""));
+    const lab = el("div", "blab"); lab.append(el("span", null, fl(p.t)), el("span", null, p.n));
+    const track = el("div", "track");
+    const st = el("span", "subtrack");
+    const bar = el("span", "bar"); bar.style.setProperty("--w", (p.g / max * 100).toFixed(1) + "%");
+    st.append(bar);
+    track.append(st, el("span", "bval", String(p.g)));
+    b.append(lab, track);
+    attachTip(b, () => [["t2", p.full + " — " + p.g + " goals"], ["t1", nm(p.t)], ["t3", p.s]]);
+    chart.append(rev(b, 46.7 + i * .35));
+  });
+  s.append(chart);
+  const leg = el("div", "legend");
+  const l1 = el("span"); const s1 = el("span", "sw"); s1.style.background = "var(--accent)"; l1.append(s1, "still playing");
+  const l2 = el("span"); const s2 = el("span", "sw"); s2.style.background = "var(--deemph)"; l2.append(s2, "eliminated");
+  leg.append(l1, l2);
+  s.append(rev(leg, 50.0));
+  s.append(rev(el("p", "caption", "Tiebreaker is assists — Messi leads with 3, and still has the final to play. The first World Cup ever with three players on 7+ goals."), 50.8));
+})();
+
+/* ---- scene 5 · the final ---- */
+(function(){
+  const s = scene("fin");
+  s.append(
+    rev(el("div", "eyebrow", "Sunday, July 19 · MetLife Stadium, New Jersey"), 54.2),
+    rev(el("h2", null, "One match left."), 54.4)
+  );
+  const v = el("div", "versus");
+  const mk = (code, sub) => {
+    const t = el("div", "vteam");
+    t.append(el("span", "vf", fl(code)), el("span", "vn", nm(code)), el("span", "vs", sub));
+    return t;
+  };
+  v.append(
+    mk("ESP", "European champions · unbeaten · 2 goals conceded"),
+    el("span", "vmid", "v"),
+    mk("ARG", "World champions · chasing the first repeat since Brazil 1962")
+  );
+  s.append(rev(v, 55.0));
+  s.append(rev(el("p", "caption", "Messi, 38 — eight goals, three assists, twenty-one career World Cup goals — plays for one last star."), 56.4));
+  s.append(rev(el("p", "footnote", "Third place · Jul 18, Miami — France v England"), 57.4));
+  s.append(rev(el("p", "footnote", "That's 60 seconds. ↻ replays · ▤ has every table."), 58.4));
+})();
+
+/* =============================================================
+   ENGINE
+   ============================================================= */
+const revEls = [...stage.querySelectorAll("[data-at]")].map(n => ({ el: n, at: +n.dataset.at }));
+const countEls = [...stage.querySelectorAll("[data-count]")].map(n => ({
+  el: n, target: +n.dataset.count, t0: +n.dataset.t0, t1: +n.dataset.t1, last: null
+}));
+
+const playBtn = $("#playBtn"), clockEl = $("#clock"), scrubEl = $("#scrub");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let t = 0, playing = !REDUCED, lastTs = null;
+
+/* deep link: #t=32 seeks; #t=32&pause holds the frame (also used for testing) */
+(function(){
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.has("t")) { t = clamp(+h.get("t") || 0, 0, DUR); }
+  if (h.has("pause")) playing = false;
+  if (h.has("light")) document.documentElement.dataset.theme = "light";
+  if (h.has("dark")) document.documentElement.dataset.theme = "dark";
+})();
+
+/* scrubber segments */
+const segFills = SCENES.map(sc => {
+  const seg = el("div", "seg");
+  seg.style.flexGrow = String(sc.t1 - sc.t0);
+  seg.style.flexBasis = "0";
+  const fill = el("div", "segfill"); seg.append(fill);
+  seg.append(el("div", "seglab", sc.label));
+  scrubEl.append(seg);
+  return fill;
+});
+let dragging = false;
+function scrubTo(e){
+  const r = scrubEl.getBoundingClientRect();
+  t = clamp((e.clientX - r.left) / r.width, 0, 1) * DUR;
+}
+scrubEl.addEventListener("pointerdown", e => { dragging = true; scrubEl.setPointerCapture(e.pointerId); scrubTo(e); });
+scrubEl.addEventListener("pointermove", e => { if (dragging) scrubTo(e); });
+scrubEl.addEventListener("pointerup", () => dragging = false);
+
+function setPlaying(p){
+  playing = p;
+  playBtn.textContent = playing ? "❚❚" : (t >= DUR ? "↻" : "▶");
+  playBtn.setAttribute("aria-label", playing ? "Pause" : (t >= DUR ? "Replay" : "Play"));
+}
+playBtn.addEventListener("click", () => {
+  if (!playing && t >= DUR) t = 0;
+  setPlaying(!playing);
+});
+
+function sceneIndex(){
+  for (let i = 0; i < SCENES.length; i++) if (t < SCENES[i].t1) return i;
+  return SCENES.length - 1;
+}
+function jumpScene(di){
+  const i = clamp(sceneIndex() + di, 0, SCENES.length - 1);
+  t = SCENES[i].t0 + .01;
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea")) return;
+  if (e.code === "Space") { e.preventDefault(); playBtn.click(); }
+  else if (e.key === "ArrowRight") jumpScene(1);
+  else if (e.key === "ArrowLeft") jumpScene(-1);
+  else if (e.key === "Home") { t = 0; }
+  else if (e.key.toLowerCase() === "d") toggler();
+  else if (e.key.toLowerCase() === "t") themeBtnFn();
+  else if (e.key === "Escape" && panel.classList.contains("open")) toggler();
+});
+
+function fmt(x){ const s = Math.floor(x); return "0:" + String(s).padStart(2, "0"); }
+
+function render(){
+  const act = sceneIndex();
+  sceneEls.forEach((sEl, i) => sEl.classList.toggle("active", i === act));
+  for (const r of revEls) r.el.classList.toggle("on", t >= r.at);
+  for (const c of countEls) {
+    const p = clamp((t - c.t0) / (c.t1 - c.t0), 0, 1);
+    const v = Math.round(c.target * easeOut(p));
+    if (v !== c.last) { c.el.textContent = v.toLocaleString("en-US"); c.last = v; }
+  }
+  SCENES.forEach((sc, i) => {
+    segFills[i].style.width = (clamp((t - sc.t0) / (sc.t1 - sc.t0), 0, 1) * 100).toFixed(1) + "%";
+  });
+  clockEl.textContent = fmt(Math.min(t, DUR)) + " / 1:00";
+}
+
+function loop(ts){
+  if (lastTs == null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, .1);
+  lastTs = ts;
+  if (playing && !dragging) {
+    t += dt;
+    if (t >= DUR) { t = DUR; setPlaying(false); }
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+setPlaying(playing);
+requestAnimationFrame(loop);
+
+/* =============================================================
+   THEME + DATA PANEL
+   ============================================================= */
+function themeBtnFn(){
+  const root = document.documentElement;
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = root.dataset.theme || (dark ? "dark" : "light");
+  root.dataset.theme = cur === "dark" ? "light" : "dark";
+}
+$("#themeBtn").addEventListener("click", themeBtnFn);
+
+const panel = $("#panel"), dataBtn = $("#dataBtn");
+function toggler(){
+  const open = !panel.classList.contains("open");
+  panel.classList.toggle("open", open);
+  dataBtn.setAttribute("aria-pressed", String(open));
+  if (open) setPlaying(false);
+}
+dataBtn.addEventListener("click", toggler);
+
+(function buildPanel(){
+  const close = el("button", "chip close", "✕ close"); close.addEventListener("click", toggler);
+  panel.append(close, el("h2", null, "The data"),
+    el("p", "footnote", "2026 FIFA World Cup through the semifinals — compiled July 16, 2026."));
+
+  function table(headers, rows, strongCol){
+    const tb = el("table"), tr = el("tr");
+    headers.forEach(h => tr.append(el("th", null, h)));
+    const thead = el("thead"); thead.append(tr); tb.append(thead);
+    const body = el("tbody");
+    rows.forEach(r => {
+      const tr2 = el("tr");
+      r.forEach((cell, i) => tr2.append(el("td", (i === strongCol ? "strong" : "") + (typeof cell === "number" ? " num" : ""), String(cell))));
+      body.append(tr2);
+    });
+    tb.append(body);
+    return tb;
+  }
+
+  panel.append(el("h3", null, "Knockout stage — every result"));
+  panel.append(table(
+    ["Round", "Match", "Score", "When · where", "Notes"],
+    ALL_KO.map(m => [
+      ROUNDS[m.r],
+      nm(m.a) + " v " + nm(m.b),
+      m.sa + "–" + m.sb + (m.aet ? " aet" : "") + (m.pens ? " · " + nm(m[m.win]) + " won " + m.pens.split("–").sort((x,y)=>y-x).join("–") + " on pens" : ""),
+      m.date + " · " + m.venue,
+      m.note || (m.gl ? "Goals: " + m.gl : "")
+    ]).concat([
+      ["Third place", "France v England", "—", "Jul 18 · Hard Rock Stadium, Miami Gardens", ""],
+      ["Final", "Spain v Argentina", "—", "Jul 19 · MetLife Stadium, East Rutherford NJ", "European champions v world champions"]
+    ]), 1));
+
+  panel.append(el("h3", null, "Group stage — final standings (points)"));
+  panel.append(table(
+    ["Group", "1st", "2nd", "3rd", "4th"],
+    GROUPS.map(([g, rows]) => [
+      g,
+      ...rows.map(([c, p, f]) => nm(c) + " · " + p + (f === "3" ? " (adv.)" : (f === "" && rows.findIndex(x=>x[0]===c) === 2 ? " (out)" : "")))
+    ]), 1));
+  panel.append(el("p", "footnote", "Top two in each group advanced, plus the eight best third-placed teams (marked adv.). Minor point discrepancies exist between published tables for Groups H and K; ordering is agreed everywhere."));
+
+  panel.append(el("h3", null, "Golden Boot standings"));
+  panel.append(table(
+    ["#", "Player", "Team", "Goals", "Status"],
+    SCORERS.map((p, i) => [i + 1, p.full, nm(p.t), p.g, p.s])
+      .concat(SCORERS_MORE.map((p, i) => [9 + i, p.full, nm(p.t), p.g, ""])), 1));
+
+  panel.append(el("h3", null, "Records set (selection)"));
+  const ul = el("ul");
+  [
+    "Highest-scoring World Cup ever: 297 goals through 102 matches (2.91 per match).",
+    "All-time attendance record: 6,665,825 (avg 65,351) — old record 3,587,538 at USA 1994.",
+    "Messi: most career World Cup goals (21, passing Klose's 16), most World Cup appearances (38), scored in 9 straight matches, oldest hat-trick scorer (38y 357d).",
+    "Unai Simón: longest World Cup clean-sheet streak — 650 minutes (old record: Zenga, 517, in 1990).",
+    "Latest goal in World Cup history: 120+5′, Belgium v Senegal (round of 32).",
+    "3,000th World Cup goal all-time: Enzo Fernández v Egypt (round of 16).",
+    "Germany's first-ever World Cup shootout defeat (v Paraguay, round of 32).",
+    "Cape Verde: smallest nation ever to play at a World Cup.",
+    "Michael Olise: 5 assists — most in a single World Cup since 1994.",
+    "First World Cup with three players scoring 7+ goals."
+  ].forEach(x => ul.append(el("li", null, x)));
+  panel.append(ul);
+
+  panel.append(el("p", "footnote",
+    "Compiled from Wikipedia (2026 FIFA World Cup + knockout-stage pages), FIFA.com match centre, ESPN, Goal.com, NBC Sports and FOX Sports, cross-checked July 16, 2026. " +
+    "Where sources disagree (total goals 294–297; a few group-stage point tallies) the most-cited figure is shown. Built as a static, client-side page — no data is fetched."));
+})();
+if (new URLSearchParams(location.hash.slice(1)).has("data")) toggler();
+</script>
+</body>
+</html>
