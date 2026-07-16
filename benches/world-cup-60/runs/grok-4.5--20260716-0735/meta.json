@@ -1,0 +1,36 @@
+{
+  "runId": "grok-4.5--20260716-0735",
+  "bench": "world-cup-60",
+  "model": "grok-4.5",
+  "effort": "high",
+  "cli": "grok",
+  "cliVersion": "grok 0.2.101 (5bc4b5dfadcf)",
+  "startedAt": "2026-07-16T11:35:47.394Z",
+  "wallSeconds": 130,
+  "rootAbsolutePaths": [],
+  "totalTokens": 231487,
+  "totalCostUsd": null,
+  "estimatedCostUsd": 0.2657,
+  "usage": {
+    "inputTokens": 214755,
+    "cachedInputTokens": 176128,
+    "outputTokens": 16732
+  },
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "--model",
+    "grok-4.5",
+    "--reasoning-effort",
+    "high",
+    "--always-approve",
+    "--output-format",
+    "streaming-json",
+    "--verbatim"
+  ],
+  "appPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/app/index.html",
+  "screenshotPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/screenshot.png",
+  "redactions": 0
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T11:27:50.704Z",
+  "generatedAt": "2026-07-16T11:38:00.627Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -528,7 +528,49 @@
       "sharedInstructions": "# jonny-bench: global instructions\n\nThese rules apply to every bench in this repo, on top of the specific bench prompt below. They exist so you don't have to guess at the environment your submission runs in or gets evaluated in.\n\n## Deployment environment\n\nYour finished submission is published as a static site nested under a subdirectory path (e.g. `https://jonnyasmar.github.io/jonny-bench/benches/<slug>/runs/<run-id>/app/`), not the domain root, with no server-side routing or rewrites.\n\n- Use relative asset paths only (`./assets/foo.js`, `assets/foo.css`). Never use root-absolute paths (`/assets/foo.js`) — they resolve fine in local dev or when served from a server's root, but 404 once nested under a subdirectory.\n- If you use a bundler (Vite, webpack, esbuild, etc.), set its base/public-path option to relative (e.g. Vite's `base: './'`) so the build works from any subdirectory, not just the root.\n- Verify your build by opening its `index.html` from a nested folder, or via `file://`, not only through a dev server bound to `/`.\n",
       "capMinutes": 90,
       "suggestedBy": null,
-      "runs": []
+      "runs": [
+        {
+          "runId": "grok-4.5--20260716-0735",
+          "bench": "world-cup-60",
+          "model": "grok-4.5",
+          "effort": "high",
+          "cli": "grok",
+          "cliVersion": "grok 0.2.101 (5bc4b5dfadcf)",
+          "startedAt": "2026-07-16T11:35:47.394Z",
+          "wallSeconds": 130,
+          "rootAbsolutePaths": [],
+          "totalTokens": 231487,
+          "totalCostUsd": null,
+          "estimatedCostUsd": 0.2657,
+          "usage": {
+            "inputTokens": 214755,
+            "cachedInputTokens": 176128,
+            "outputTokens": 16732
+          },
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "[prompt]",
+            "--model",
+            "grok-4.5",
+            "--reasoning-effort",
+            "high",
+            "--always-approve",
+            "--output-format",
+            "streaming-json",
+            "--verbatim"
+          ],
+          "appPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/app/index.html",
+          "screenshotPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/screenshot.png",
+          "redactions": 0,
+          "displayName": "Grok 4.5",
+          "vendor": "xAI",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/transcript.jsonl"
+        }
+      ]
     }
   ]
 }
