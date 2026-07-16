@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The 2026 World Cup so far — 102 matches distilled into a 60-second interactive story.">
+  <title>World Cup 2026 — The 60 Second Story</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <main class="broadcast" id="broadcast">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Restart World Cup 2026 story">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><b>26</b> / THE STORY SO FAR</span>
+      </a>
+      <div class="live-chip"><span></span> UPDATED JUL 16</div>
+      <button class="icon-button" id="exploreButton" type="button" aria-label="Explore all results">
+        <span>ALL 102</span>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7h12M4 13h12"/></svg>
+      </button>
+    </header>
+
+    <section class="stage" aria-live="polite">
+      <div class="ambient-orb orb-a"></div>
+      <div class="ambient-orb orb-b"></div>
+      <div class="pitch-lines" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="scene is-active" id="scene"></div>
+      <div class="skip-hint" id="skipHint">Use ← → to jump chapters</div>
+    </section>
+
+    <footer class="player">
+      <button class="play-button" id="playButton" type="button" aria-label="Pause story">
+        <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4h3v12H6zM11 4h3v12h-3z"/></svg>
+        <svg class="play-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 9 6-9 6z"/></svg>
+      </button>
+      <div class="timeline-wrap">
+        <div class="chapter-labels" id="chapterLabels"></div>
+        <div class="timeline" id="timeline">
+          <div class="timeline-buffer"></div>
+          <div class="timeline-progress" id="timelineProgress"></div>
+          <input id="scrubber" type="range" min="0" max="60" step="0.01" value="0" aria-label="Story progress in seconds">
+        </div>
+      </div>
+      <div class="timecode"><span id="timeNow">00:00</span><i>/</i>01:00</div>
+      <button class="speed-button" id="speedButton" type="button" aria-label="Playback speed">1×</button>
+    </footer>
+  </main>
+
+  <aside class="results-panel" id="resultsPanel" aria-hidden="true">
+    <div class="panel-backdrop" data-close-panel></div>
+    <div class="panel-sheet">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">THE COMPLETE LEDGER</p>
+          <h2>102 matches. Every score.</h2>
+        </div>
+        <button class="close-button" type="button" data-close-panel aria-label="Close results">×</button>
+      </div>
+      <div class="panel-stats" id="panelStats"></div>
+      <div class="filter-row" id="filterRow"></div>
+      <div class="results-list" id="resultsList"></div>
+      <p class="source-note">Results current through 15 July 2026. Penalty shootout goals are not included in goal totals. Sources: <a href="https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums" target="_blank" rel="noreferrer">FIFA</a>, <a href="https://apnews.com/article/argentina-messi-spain-yamal-world-cup-final-55077ce5c4728c4207a39cc4aa8a41a1" target="_blank" rel="noreferrer">AP</a> and <a href="https://www.fourfourtwo.com/competition/all-of-the-world-cup-scores-so-far-at-the-2026-tournament" target="_blank" rel="noreferrer">FourFourTwo</a>.</p>
+    </div>
+  </aside>
+
+  <noscript>This visualization needs JavaScript enabled to play.</noscript>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T11:39:03.497Z",
+  "generatedAt": "2026-07-16T11:45:26.246Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -608,6 +608,55 @@
           "flagship": true,
           "rank": 1,
           "transcriptPath": "benches/world-cup-60/runs/grok-4.5--20260716-0735/transcript.jsonl"
+        },
+        {
+          "runId": "gpt-5.6-sol--20260716-0735",
+          "bench": "world-cup-60",
+          "model": "gpt-5.6-sol",
+          "effort": "high",
+          "cli": "codex",
+          "cliVersion": "codex-cli 0.144.4",
+          "startedAt": "2026-07-16T11:35:46.988Z",
+          "wallSeconds": 568,
+          "rootAbsolutePaths": [],
+          "totalTokens": 2147009,
+          "totalCostUsd": null,
+          "estimatedCostUsd": 2.4426,
+          "usage": {
+            "inputTokens": 2116980,
+            "cachedInputTokens": 2009600,
+            "outputTokens": 30029
+          },
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "exec",
+            "-C",
+            "$WORKDIR",
+            "-m",
+            "gpt-5.6-sol",
+            "-c",
+            "model_reasoning_effort=high",
+            "-c",
+            "model_reasoning_summary=detailed",
+            "--json",
+            "--output-last-message",
+            "$RUN_DIR/last-message.txt",
+            "--sandbox",
+            "workspace-write",
+            "-c",
+            "sandbox_workspace_write.network_access=true",
+            "--ignore-user-config",
+            "[prompt]"
+          ],
+          "appPath": "benches/world-cup-60/runs/gpt-5.6-sol--20260716-0735/app/index.html",
+          "screenshotPath": "benches/world-cup-60/runs/gpt-5.6-sol--20260716-0735/screenshot.png",
+          "redactions": 3,
+          "displayName": "GPT-5.6 Sol",
+          "vendor": "OpenAI",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/world-cup-60/runs/gpt-5.6-sol--20260716-0735/transcript.jsonl"
         }
       ]
     }
