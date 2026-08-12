@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-12T16:17:15.036Z",
+  "generatedAt": "2026-08-12T16:51:57.509Z",
   "baseUrl": "https://jonnyasmar.github.io/jonny-bench",
   "benches": [
     {
@@ -349,7 +349,49 @@
       "sharedInstructions": "# jonny-bench: global instructions\n\nThese rules apply to every bench in this repo, on top of the specific bench prompt below. They exist so you don't have to guess at the environment your submission runs in or gets evaluated in.\n\n## Deployment environment\n\nYour finished submission is published as a static site nested under a subdirectory path (e.g. `https://jonnyasmar.github.io/jonny-bench/benches/<slug>/runs/<run-id>/app/`), not the domain root, with no server-side routing or rewrites.\n\n- Use relative asset paths only (`./assets/foo.js`, `assets/foo.css`). Never use root-absolute paths (`/assets/foo.js`) — they resolve fine in local dev or when served from a server's root, but 404 once nested under a subdirectory.\n- If you use a bundler (Vite, webpack, esbuild, etc.), set its base/public-path option to relative (e.g. Vite's `base: './'`) so the build works from any subdirectory, not just the root.\n- Verify your build by opening its `index.html` from a nested folder, or via `file://`, not only through a dev server bound to `/`.\n",
       "capMinutes": 90,
       "suggestedBy": null,
-      "runs": []
+      "runs": [
+        {
+          "runId": "grok-4.6--20260812-1218",
+          "bench": "invent-roguelite",
+          "model": "grok-4.6",
+          "effort": "high",
+          "cli": "grok",
+          "cliVersion": "grok 1.0.3 (1a29d5bc12d4)",
+          "startedAt": "2026-08-12T16:18:32.115Z",
+          "wallSeconds": 2002,
+          "rootAbsolutePaths": [],
+          "totalTokens": 4139233,
+          "totalCostUsd": null,
+          "estimatedCostUsd": 3.1585,
+          "usage": {
+            "inputTokens": 3983779,
+            "cachedInputTokens": 3827840,
+            "outputTokens": 155454
+          },
+          "status": "ok",
+          "exitReason": "completed",
+          "argv": [
+            "-p",
+            "[prompt]",
+            "--model",
+            "grok-4.6",
+            "--reasoning-effort",
+            "high",
+            "--always-approve",
+            "--output-format",
+            "streaming-json",
+            "--verbatim"
+          ],
+          "appPath": "benches/invent-roguelite/runs/grok-4.6--20260812-1218/app/index.html",
+          "screenshotPath": null,
+          "redactions": 0,
+          "displayName": "Grok 4.6",
+          "vendor": "xAI",
+          "flagship": true,
+          "rank": 1,
+          "transcriptPath": "benches/invent-roguelite/runs/grok-4.6--20260812-1218/transcript.jsonl"
+        }
+      ]
     },
     {
       "slug": "solar-system",

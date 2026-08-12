@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SYZYGY — Align the Heavens</title>
+    <meta name="description" content="A celestial roguelite. Build a living solar system. Align your relics. Outlast the Null." />
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="./assets/index.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index.css">
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="c"></canvas>
+      <div id="grade"></div>
+      <div id="flash"></div>
+      <div id="vignette"></div>
+      <div id="float-layer"></div>
+
+      <div id="hud" class="hidden">
+        <div class="hud-top">
+          <div class="hud-place">
+            <div class="hud-kicker" id="hud-floor">FIRST HEAVEN</div>
+            <div class="hud-chamber" id="hud-chamber">Chamber 1</div>
+          </div>
+          <div id="syzygy-banner" class="syzygy-banner"></div>
+          <div class="hud-run">
+            <div class="hud-stat"><span>Ash</span><b id="hud-ash">0</b></div>
+            <div class="hud-stat"><span>Align</span><b id="hud-align">×1</b></div>
+          </div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="integrity" id="integrity"></div>
+          <div class="orrery" id="orrery"></div>
+          <div class="cooldowns">
+            <div class="cd" id="cd-dash"><i></i><label>Dash</label></div>
+            <div class="cd" id="cd-pulse"><i></i><label>Pulse</label></div>
+            <div class="cd" id="cd-fling"><i></i><label>Fling</label></div>
+          </div>
+        </div>
+
+        <div id="hint" class="hint"></div>
+        <div id="boss-bar" class="boss-bar hidden">
+          <div class="boss-name" id="boss-name">THE HOLLOW MERIDIAN</div>
+          <div class="boss-track"><i id="boss-fill"></i></div>
+        </div>
+      </div>
+
+      <div id="announce" class="announce"></div>
+
+      <div id="cards" class="overlay hidden">
+        <div class="overlay-kicker">The heavens offer a law</div>
+        <h2 class="overlay-title">Choose an Edict</h2>
+        <div class="card-row" id="card-row"></div>
+        <div class="overlay-sub" id="card-sub">One law binds this run.</div>
+      </div>
+
+      <div id="altar" class="overlay hidden">
+        <div class="overlay-kicker">A quiet meridian</div>
+        <h2 class="overlay-title">Altar of Rest</h2>
+        <p class="overlay-lead">Spend stardust gathered this run. The Null is patient. You should not be.</p>
+        <div class="altar-grid" id="altar-grid"></div>
+        <button class="btn ghost" id="altar-leave">Leave the altar</button>
+      </div>
+
+      <div id="title" class="overlay title-overlay">
+        <div class="title-mark">A ROGUELITE OF DYING STARS</div>
+        <h1>SYZYGY</h1>
+        <p class="title-tag">Align the heavens. Outlast the Null.</p>
+        <div class="title-actions">
+          <button class="btn gold" id="btn-embark">Embark</button>
+          <button class="btn" id="btn-how">How to Play</button>
+          <button class="btn" id="btn-reliquary">Reliquary</button>
+        </div>
+        <div class="title-meta" id="title-meta"></div>
+      </div>
+
+      <div id="how" class="overlay hidden">
+        <div class="panel">
+          <div class="overlay-kicker">Pilot primer</div>
+          <h2 class="overlay-title">How to Play</h2>
+          <div class="how-grid">
+            <div>
+              <h3>You are a Pilot-Spark</h3>
+              <p>
+                A remnant will that once steered a star. You have no blade. You gather
+                <em>relics</em> into orbit and let the sky do the killing.
+              </p>
+            </div>
+            <div>
+              <h3>Syzygy</h3>
+              <p>
+                When two relics line up through your core, a killing axis ignites.
+                Pulse in that window for a <em>Nova</em>. Fling in that window for a
+                <em>Spear of Heaven</em>. Reverse orbits to force the alignment.
+              </p>
+            </div>
+            <div>
+              <h3>The run</h3>
+              <p>
+                Three Heavens. Chambers, elites, altars, sovereigns. After each fight
+                an <em>Edict</em> rewrites your physics. Die, and you keep Ash for the Reliquary.
+              </p>
+            </div>
+          </div>
+          <dl class="keys">
+            <div><dt>WASD</dt><dd>Drift</dd></div>
+            <div><dt>Mouse</dt><dd>Aim</dd></div>
+            <div><dt>LMB</dt><dd>Fling relic</dd></div>
+            <div><dt>RMB</dt><dd>Pulse</dd></div>
+            <div><dt>Space</dt><dd>Dash</dd></div>
+            <div><dt>Shift</dt><dd>Attract</dd></div>
+            <div><dt>R</dt><dd>Reverse orbits</dd></div>
+            <div><dt>Esc</dt><dd>Pause</dd></div>
+          </dl>
+          <button class="btn gold" id="how-close">Understood</button>
+        </div>
+      </div>
+
+      <div id="reliquary" class="overlay hidden">
+        <div class="panel wide">
+          <div class="overlay-kicker">Between runs</div>
+          <h2 class="overlay-title">Reliquary</h2>
+          <p class="overlay-lead">Spend Ash to unseal starting relics and forbidden edicts.</p>
+          <div class="ash-bank">Ash held <b id="ash-bank">0</b></div>
+          <div class="unlock-grid" id="unlock-grid"></div>
+          <button class="btn ghost" id="reliquary-close">Return</button>
+        </div>
+      </div>
+
+      <div id="pause" class="overlay hidden">
+        <div class="panel slim">
+          <div class="overlay-kicker">Held in amber</div>
+          <h2 class="overlay-title">Paused</h2>
+          <div class="pause-actions">
+            <button class="btn gold" id="btn-resume">Resume</button>
+            <button class="btn" id="btn-abandon">Abandon run</button>
+          </div>
+          <div class="vol-row">
+            <label>Volume <input type="range" id="vol" min="0" max="100" value="70" /></label>
+          </div>
+        </div>
+      </div>
+
+      <div id="results" class="overlay hidden">
+        <div class="panel">
+          <div class="overlay-kicker" id="results-kicker">The spark guttered</div>
+          <h2 class="overlay-title" id="results-title">Fallen</h2>
+          <p class="overlay-lead" id="results-lead"></p>
+          <ul class="stats" id="results-stats"></ul>
+          <div class="unlock-toast" id="results-unlocks"></div>
+          <div class="title-actions">
+            <button class="btn gold" id="btn-again">One more heaven</button>
+            <button class="btn" id="btn-menu">Title</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "runId": "grok-4.6--20260812-1218",
+  "bench": "invent-roguelite",
+  "model": "grok-4.6",
+  "effort": "high",
+  "cli": "grok",
+  "cliVersion": "grok 1.0.3 (1a29d5bc12d4)",
+  "startedAt": "2026-08-12T16:18:32.115Z",
+  "wallSeconds": 2002,
+  "rootAbsolutePaths": [],
+  "totalTokens": 4139233,
+  "totalCostUsd": null,
+  "estimatedCostUsd": 3.1585,
+  "usage": {
+    "inputTokens": 3983779,
+    "cachedInputTokens": 3827840,
+    "outputTokens": 155454
+  },
+  "status": "ok",
+  "exitReason": "completed",
+  "argv": [
+    "-p",
+    "[prompt]",
+    "--model",
+    "grok-4.6",
+    "--reasoning-effort",
+    "high",
+    "--always-approve",
+    "--output-format",
+    "streaming-json",
+    "--verbatim"
+  ],
+  "appPath": "benches/invent-roguelite/runs/grok-4.6--20260812-1218/app/index.html",
+  "screenshotPath": null,
+  "redactions": 0
+}
