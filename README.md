@@ -59,6 +59,7 @@ Effort policy: jonny-bench pins the high-equivalent reasoning effort wherever th
 | GPT-5.5 | OpenAI | codex | high |
 | GPT-5.6 Sol | OpenAI | codex | high |
 | GPT-5.6 Terra | OpenAI | codex | high |
+| Grok 4.6 | xAI | grok | high |
 | Grok 4.5 | xAI | grok | high |
 | Gemini 3.1 Pro | Google | antigravity | high (in model string) |
 
